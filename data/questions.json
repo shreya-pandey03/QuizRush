@@ -1,0 +1,21 @@
+[
+{
+"id":"1",
+"question":"What is React?",
+"optionA":"Library",
+"optionB":"Server",
+"optionC":"Database",
+"optionD":"OS",
+"answer":"Library"
+},
+
+{
+"id":"2",
+"question":"What is Bun?",
+"optionA":"Runtime",
+"optionB":"Browser",
+"optionC":"Database",
+"optionD":"Framework",
+"answer":"Runtime"
+}
+]
