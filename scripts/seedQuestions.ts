@@ -1,5 +1,6 @@
-import { db } from "../drizzle/db.ts"
-import { questions } from "../drizzle/db/schema.ts"
+import { db } from "@/drizzle/src/db";
+import {questions } from "@/drizzle/src/db/schema";
+
 
 async function seed() {
   await db

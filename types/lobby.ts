@@ -1,13 +1,11 @@
-export interface Lobby{
+export type Lobby = {
+  id: string;
+  name: string;
+  hostId: string;
+  code: string;
+  isStarted: boolean;
+  createdAt: Date | null;
 
-id:string
-
-name:string
-
-hostId:string
-
-players:number
-
-started:boolean
-
-}
+  // add this
+  players: number;
+};

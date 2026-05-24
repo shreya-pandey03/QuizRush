@@ -13,7 +13,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   image: text("image"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 /* ================= LOBBIES ================= */
@@ -22,16 +22,16 @@ export const lobbies = pgTable("lobbies", {
   name: text("name").notNull(),
   hostId: uuid("hostId").notNull(),
   code: text("code").notNull().unique(),
-  isStarted: boolean("isStarted").default(false),
-  createdAt: timestamp("createdAt").defaultNow(),
+  isStarted: boolean("isStarted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-/* ============ LOBBY PLAYERS ============ */
+/* ================= LOBBY PLAYERS ================= */
 export const lobbyPlayers = pgTable("lobbyPlayers", {
   id: uuid("id").defaultRandom().primaryKey(),
   lobbyId: uuid("lobbyId").notNull(),
   userId: uuid("userId").notNull(),
-  joinedAt: timestamp("joinedAt").defaultNow(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
 });
 
 /* ================= QUESTIONS ================= */
@@ -50,6 +50,6 @@ export const scores = pgTable("scores", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("userId").notNull(),
   lobbyId: uuid("lobbyId").notNull(),
-  points: integer("points").default(0),
-  createdAt: timestamp("createdAt").defaultNow(),
+  points: integer("points").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

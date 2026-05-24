@@ -24,11 +24,17 @@ export default function SignUpPage() {
 
           {session ? (
             <div className="flex flex-col items-center">
-              <img
-                src={session.user?.image || ""}
-                alt="profile"
-                className="w-24 h-24 rounded-full border-4 border-orange-500"
-              />
+             {session.user?.image ? (
+  <img
+    src={session.user.image}
+    alt="profile"
+    className="w-24 h-24 rounded-full border-4 border-orange-500"
+  />
+) : (
+  <div className="w-24 h-24 rounded-full border-4 border-orange-500 flex items-center justify-center">
+    👤
+  </div>
+)}
 
               <h1 className="text-white text-2xl font-bold mt-5">
                 Welcome Back

@@ -1,15 +1,24 @@
-import { NextResponse } from "next/server";
 import { db } from "@/drizzle/src/db";
-import { db } from "@/drizzle/src/db/index";
+import { lobbies,lobbyPlayers } from "@/drizzle/src/db/schema";
+
+import { eq } from "drizzle-orm";
 
 export async function GET() {
-  const data = await db.select().from(rooms);
+  const data = await db.select().from(lobbies);
 
-  return NextResponse.json({
-    lobbies: data.map((room) => ({
-      id: room.id,
-      name: room.name ?? "Quiz Lobby",
-      players: room.players ?? 0,
-    })),
-  });
+  const lobbiesWithPlayers = await Promise.all(
+    data.map(async (lobby) => {
+      const players = await db
+        .select()
+        .from(lobbyPlayers)
+        .where(eq(lobbyPlayers.lobbyId, lobby.id));
+
+      return {
+        ...lobby,
+        players: players.length,
+      };
+    })
+  );
+
+  return Response.json(lobbiesWithPlayers);
 }

@@ -1,31 +1,45 @@
 import { NextResponse } from "next/server";
-import { db } from "@/drizzle/db";
-import { lobbies } from "@/drizzle/db/schema";
+import { db } from "@/drizzle/src/db";
+import { lobbies } from "@/drizzle/src/db/schema";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+function generateCode() {
+  return Math.random()
+    .toString(36)
+    .substring(2,8)
+    .toUpperCase();
+}
 
-    const roomCode = Math.random().toString(36).slice(2, 8);
+export async function POST(req: Request){
 
-    await db.insert(lobbies).values({
-      name: body.name,
+  try{
 
-      hostId: body.hostId,
+    const {name,hostId} = await req.json();
 
-      code: roomCode,
-    });
+    const lobby = await db
+      .insert(lobbies)
+      .values({
+        name,
+        hostId,
+        code: generateCode(),
+      })
+      .returning();
 
     return NextResponse.json({
-      success: true,
-
-      code: roomCode,
+      success:true,
+      lobbyId:lobby[0].id
     });
-  } catch {
-    return NextResponse.json(
-      { success: false },
 
-      { status: 500 },
+  } catch(error){
+
+    return NextResponse.json(
+      {
+        success:false
+      },
+      {
+        status:500
+      }
     );
+
   }
+
 }
