@@ -1,20 +1,59 @@
+import { Server, Socket } from "socket.io";
+import { rooms } from "./roomState";
+
 export function scoreHandlers(
-socket:any
+io:Server,
+socket:Socket
 ){
 
 socket.on(
+"submitAnswer",
+({
+roomId,
+userId,
+correct
+})=>{
 
-"scoreUpdate",
+const room=
+rooms.get(roomId);
 
-(data)=>{
+if(!room)
+return;
 
-socket.broadcast.emit(
-"scoreUpdated",
-data
-)
+let player=
+room.scores.find(
+p=>
+p.userId===userId
+);
+
+if(!player){
+
+player={
+
+userId,
+score:0
+
+};
+
+room.scores.push(
+player
+);
 
 }
 
-)
+if(correct){
+
+player.score++;
+
+}
+
+io.to(roomId).emit(
+"scoreUpdated",
+room.scores
+);
+
+}
+
+);
 
 }

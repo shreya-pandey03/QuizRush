@@ -1,20 +1,46 @@
+import { Server } from "socket.io";
+import { rooms } from "./roomState";
+
 export function timerHandlers(
-socket:any
+io:Server
 ){
 
-socket.on(
+setInterval(()=>{
 
+rooms.forEach(
+(room,roomId)=>{
+
+if(!room.started)
+return;
+
+room.timeLeft--;
+
+io.to(roomId).emit(
 "timerUpdate",
+room.timeLeft
+);
 
-(data)=>{
+if(
+room.timeLeft<=0
+){
 
-socket.broadcast.emit(
-"timerUpdated",
-data
-)
+room.timeLeft=30;
+
+room.currentQuestion++;
+
+io.to(roomId).emit(
+"questionChanged",
+{
+questionIndex:
+room.currentQuestion
+}
+);
 
 }
 
-)
+}
+);
+
+},1000);
 
 }

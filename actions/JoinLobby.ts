@@ -1,21 +1,28 @@
 "use server";
 
-export async function JoinLobby(code: string) {
-  const response = await fetch(
-    "http://localhost:3001/api/lobby/join",
+export async function JoinLobby(
+  code: string
+) {
 
-    {
-      method: "POST",
+  const response =
+    await fetch(
+      "http://localhost:3001/api/lobby/join",
+      {
+        method:"POST",
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+        headers:{
+          "Content-Type":
+          "application/json"
+        },
 
-      body: JSON.stringify({
-        code,
-      }),
-    },
-  );
+        body:JSON.stringify({
+          code
+        })
+      }
+    );
 
-  return response.json();
+  const data =
+    await response.json();
+
+  return data;
 }

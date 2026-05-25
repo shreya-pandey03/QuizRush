@@ -1,20 +1,52 @@
+import { Server, Socket } from "socket.io";
+import { rooms } from "./roomState";
+
 export function quizHandlers(
-socket:any
+  io: Server,
+  socket: Socket
 ){
 
 socket.on(
+"startQuiz",
+(roomId:string)=>{
 
-"submitAnswer",
+const room=rooms.get(roomId);
 
-(data)=>{
+if(!room)return;
 
-socket.broadcast.emit(
-"answerSubmitted",
-data
-)
+room.started=true;
+
+room.currentQuestion=0;
+
+io.to(roomId).emit(
+"quizStarted",
+{
+questionIndex:0
+}
+);
 
 }
+);
 
-)
+socket.on(
+"nextQuestion",
+(roomId:string)=>{
+
+const room=rooms.get(roomId);
+
+if(!room)return;
+
+room.currentQuestion++;
+
+io.to(roomId).emit(
+"questionChanged",
+{
+questionIndex:
+room.currentQuestion
+}
+);
+
+}
+);
 
 }

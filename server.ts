@@ -1,10 +1,4 @@
-import express from "express";
-
-import http from "http";
-
 import { Server } from "socket.io";
-
-import { lobbyHandlers } from "@/lib/socket/lobbyHandlers";
 
 import { quizHandlers } from "@/lib/socket/quizHandlers";
 
@@ -12,36 +6,32 @@ import { timerHandlers } from "@/lib/socket/timerHandlers";
 
 import { scoreHandlers } from "@/lib/socket/scoreHandlers";
 
-const app = express();
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
+const io = new Server(3002, {
   cors: {
     origin: "http://localhost:3001",
+    methods: ["GET", "POST"],
   },
 });
 
-io.on(
-  "connection",
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
-  (socket) => {
-    console.log(socket.id, "connected");
+  // join multiplayer room
+  socket.on("joinRoom", (roomId: string) => {
+    socket.join(roomId);
 
-    lobbyHandlers(io, socket);
+    console.log(`${socket.id} joined ${roomId}`);
+  });
 
-    quizHandlers(socket);
+  quizHandlers(io, socket);
 
-    timerHandlers(socket);
+  scoreHandlers(io, socket);
 
-    scoreHandlers(socket);
-  },
-);
+  socket.on("disconnect", () => {
+    console.log("Disconnected:", socket.id);
+  });
+});
 
-server.listen(
-  4000,
+timerHandlers(io);
 
-  () => {
-    console.log("Socket Server Running on 4000");
-  },
-);
+console.log("Socket server running on port 3002");

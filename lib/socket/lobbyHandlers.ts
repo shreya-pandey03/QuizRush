@@ -4,7 +4,7 @@ export function lobbyHandlers(io: Server, socket: any) {
   socket.on(
     "joinLobby",
 
-    (roomId) => {
+    (roomId: string | string[]) => {
       socket.join(roomId);
 
       io.to(roomId).emit("playerJoined");
