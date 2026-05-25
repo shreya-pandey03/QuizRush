@@ -5,31 +5,49 @@ import { lobbies } from "@/drizzle/src/db/schema";
 function generateCode() {
   return Math.random()
     .toString(36)
-    .substring(2,8)
+    .substring(2, 8)
     .toUpperCase();
 }
 
-export async function POST(req: Request){
+export async function POST(
+  req: Request
+) {
 
-  try{
+  try {
 
-    const {name,hostId} = await req.json();
+    const {
+      name,
+      hostId
+    } = await req.json();
 
-    const lobby = await db
+    const roomCode =
+      generateCode();
+
+    const lobby =
+      await db
       .insert(lobbies)
       .values({
         name,
         hostId,
-        code: generateCode(),
+        code: roomCode
       })
       .returning();
 
     return NextResponse.json({
+
       success:true,
-      lobbyId:lobby[0].id
+
+      lobbyId:
+      lobby[0].id,
+
+      roomCode:
+      roomCode
+
     });
 
   } catch(error){
+
+    console.log(error);
 
     return NextResponse.json(
       {

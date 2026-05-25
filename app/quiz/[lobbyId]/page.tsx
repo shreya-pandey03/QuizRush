@@ -9,19 +9,15 @@ import { Clock, ChevronRight, ChevronLeft, Trophy } from "lucide-react";
 export default function QuizPage() {
   const params = useParams();
 
-  const lobbyId =
-  Array.isArray(params.lobbyId)
+  const roomId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
     : String(params.lobbyId);
 
-console.log("Quiz room:", lobbyId);
-
-  const roomId = String(params.lobbyId);
-
-  // replace later with session user id
   const userId = "player123";
 
   const socketRef = useRef<Socket | null>(null);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const questions = [
     {
@@ -29,16 +25,19 @@ console.log("Quiz room:", lobbyId);
       options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
       answer: "Delhi",
     },
+
     {
       question: "2 + 2 = ?",
       options: ["2", "4", "8", "10"],
       answer: "4",
     },
+
     {
       question: "Largest planet?",
       options: ["Earth", "Mars", "Jupiter", "Venus"],
       answer: "Jupiter",
     },
+
     {
       question: "HTML stands for?",
       options: [
@@ -49,21 +48,25 @@ console.log("Quiz room:", lobbyId);
       ],
       answer: "Hyper Text Markup Language",
     },
+
     {
       question: "React created by?",
       options: ["Google", "Meta", "Microsoft", "Netflix"],
       answer: "Meta",
     },
+
     {
       question: "5 × 6 = ?",
       options: ["30", "40", "20", "10"],
       answer: "30",
     },
+
     {
       question: "Fastest animal?",
       options: ["Lion", "Tiger", "Cheetah", "Elephant"],
       answer: "Cheetah",
     },
+
     {
       question: "CSS used for?",
       options: ["Database", "Styling", "Backend", "Authentication"],
@@ -86,28 +89,38 @@ console.log("Quiz room:", lobbyId);
   useEffect(() => {
     socketRef.current = io("http://localhost:3002");
 
-    const socket = socketRef.current;
-
-    socket.emit("joinRoom", roomId);
-
-    socket.on("timerUpdate", (time) => {
-      setTimeLeft(time);
-    });
-
-    socket.on("questionChanged", (data) => {
-      if (data.questionIndex >= questions.length) {
-        finishQuiz();
-
-        return;
-      }
-
-      setCurrentQuestion(data.questionIndex);
-    });
+    socketRef.current.emit("joinRoom", roomId);
 
     return () => {
-      socket.disconnect();
+      socketRef.current?.disconnect();
     };
-  }, []);
+  }, [roomId]);
+
+  useEffect(() => {
+    if (quizEnded) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          moveNext();
+
+          return 30;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [currentQuestion, quizEnded]);
 
   function finishQuiz() {
     let finalScore = 0;
@@ -124,7 +137,21 @@ console.log("Quiz room:", lobbyId);
   }
 
   function moveNext() {
-    socketRef.current?.emit("nextQuestion", roomId);
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
+
+      setTimeLeft(30);
+    } else {
+      finishQuiz();
+    }
+  }
+
+  function movePrevious() {
+    if (currentQuestion > 0) {
+      setCurrentQuestion((prev) => prev - 1);
+
+      setTimeLeft(30);
+    }
   }
 
   function submitAnswer(option: string) {
@@ -137,6 +164,7 @@ console.log("Quiz room:", lobbyId);
     socketRef.current?.emit("submitAnswer", {
       roomId,
       userId,
+
       correct: option === questions[currentQuestion].answer,
     });
   }
@@ -146,15 +174,50 @@ console.log("Quiz room:", lobbyId);
       <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8">
-            <Trophy size={50} className="mx-auto text-orange-500" />
+            <Trophy size={60} className="mx-auto text-orange-500" />
 
-            <h1 className="text-white text-center text-4xl font-bold mt-4">
+            <h1 className="text-center text-white text-4xl font-bold mt-4">
               Quiz Finished
             </h1>
 
-            <p className="text-orange-500 text-center text-3xl font-bold mt-6">
+            <p className="text-center text-orange-500 text-3xl font-bold mt-4">
               Score: {score}/{questions.length}
             </p>
+
+            <div className="space-y-5 mt-10">
+              {questions.map((q, index) => (
+                <div
+                  key={index}
+                  className="bg-black p-5 rounded-xl border border-white/10"
+                >
+                  <p className="text-white font-medium">
+                    {index + 1}. {q.question}
+                  </p>
+
+                  <div className="space-y-2 mt-4">
+                    {q.options.map((option) => (
+                      <div
+                        key={option}
+                        className={`p-3 rounded-lg
+
+      ${
+        option === q.answer
+          ? "bg-green-600"
+          : option === answers[index] && answers[index] !== q.answer
+            ? "bg-red-600"
+            : "bg-white/5"
+      }
+
+      text-white
+      `}
+                      >
+                        {option}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>
@@ -187,15 +250,15 @@ console.log("Quiz room:", lobbyId);
               <button
                 key={option}
                 onClick={() => submitAnswer(option)}
-                className={`w-full p-4 rounded-xl border transition
+                className={`w-full p-4 rounded-xl border
 
-                  ${
-                    answers[currentQuestion] === option
-                      ? "bg-orange-500 border-orange-500"
-                      : "bg-black border-white/10 hover:border-orange-500"
-                  }
+    ${
+      answers[currentQuestion] === option
+        ? "bg-orange-500 border-orange-500"
+        : "bg-black border-white/10 hover:border-orange-500"
+    }
 
-                  text-white`}
+    text-white transition`}
               >
                 {option}
               </button>
@@ -204,9 +267,9 @@ console.log("Quiz room:", lobbyId);
 
           <div className="flex gap-4 mt-8">
             <button
+              onClick={movePrevious}
               disabled={currentQuestion === 0}
-              onClick={() => setCurrentQuestion((prev) => prev - 1)}
-              className="flex-1 py-4 border border-white/10 rounded-xl text-white"
+              className="flex-1 border border-white/10 rounded-xl py-4 text-white disabled:opacity-50"
             >
               <div className="flex justify-center gap-2">
                 <ChevronLeft size={18} />
@@ -214,15 +277,24 @@ console.log("Quiz room:", lobbyId);
               </div>
             </button>
 
-            <button
-              onClick={moveNext}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-white font-semibold"
-            >
-              <div className="flex justify-center gap-2">
-                Next Question
-                <ChevronRight size={18} />
-              </div>
-            </button>
+            {currentQuestion === questions.length - 1 ? (
+              <button
+                onClick={finishQuiz}
+                className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl py-4 text-white font-semibold"
+              >
+                Submit Quiz ✅
+              </button>
+            ) : (
+              <button
+                onClick={moveNext}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 rounded-xl py-4 text-white font-semibold"
+              >
+                <div className="flex justify-center gap-2">
+                  Next Question
+                  <ChevronRight size={18} />
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </div>

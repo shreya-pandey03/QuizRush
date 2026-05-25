@@ -1,20 +1,36 @@
-"use client"
+"use client";
 
-import PlayersList from "./PlayersList"
-import QuizTimer from "./QuizTimer"
+import PlayersList from "./PlayersList";
+import QuizTimer from "./QuizTimer";
+import { Users } from "lucide-react";
 
-export default function LobbyDashboardClient(){
+export default function LobbyDashboardClient() {
+  const players = [
+    {
+      id: "1",
+      name: "Host",
+    },
+  ];
 
-return(
+  return (
+    <div className="space-y-6">
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center gap-2">
+          <Users size={22} className="text-orange-500" />
 
-<div>
+          <h2 className="text-white text-xl font-semibold">Lobby Dashboard</h2>
+        </div>
 
-<PlayersList/>
+        <p className="text-neutral-400 mt-2">Waiting for players to join...</p>
+      </div>
 
-<QuizTimer/>
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <PlayersList />
+      </div>
 
-</div>
-
-)
-
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+        <QuizTimer />
+      </div>
+    </div>
+  );
 }
