@@ -1,56 +1,61 @@
 import { NextResponse } from "next/server";
-
 import { db } from "@/drizzle/src/db";
-import { lobbies } from "@/drizzle/src/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  
+  lobbyPlayers
+} from "@/drizzle/src/db/schema";
 
-export async function POST(
-  request: Request
-) {
 
-  try {
+export async function POST(req: Request) {
 
-    const { code } =
-      await request.json();
+  const {
+    code,
+    userId
+  } = await req.json();
 
-    const lobby =
-      await db.query.lobbies.findFirst({
+  const lobby =
+    await db.query.lobbies.findFirst({
+      where:(lobbies,{eq}) =>
+      eq(
+        lobbies.code,
+        code
+      )
+    });
 
-        where:(
-          lobbies,
-          {eq}
-        ) =>
-          eq(
-            lobbies.code,
-            code
-          )
-
-      });
-
-    if(!lobby){
-
-      return NextResponse.json({
-        error:"Lobby not found"
-      });
-
-    }
+  if(!lobby){
 
     return NextResponse.json({
+      error:"Lobby not found"
+    });
 
+  }
+
+  const alreadyJoined =
+    await db.query.lobbyPlayers.findFirst({
+      where:(players,{and,eq}) =>
+      and(
+        eq(players.userId,userId),
+        eq(players.lobbyId,lobby.id)
+      )
+    });
+
+  if(!alreadyJoined){
+
+    await db.insert(
+      lobbyPlayers
+    ).values({
+
+      userId,
       lobbyId:lobby.id
 
     });
 
   }
 
-  catch(error){
+  return NextResponse.json({
 
-    console.log(error);
+    lobbyId:lobby.id
 
-    return NextResponse.json({
-      error:"Server error"
-    });
-
-  }
+  });
 
 }

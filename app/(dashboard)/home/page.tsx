@@ -1,55 +1,54 @@
-"use client";
+import { Trophy, Gamepad2, Users } from "lucide-react";
 
-import {
-  Trophy,
-  Gamepad2,
-  Users,
-  Play
-} from "lucide-react";
+import JoinLobbyDialog from "../../../components/JoinLobbyDialog";
+import HomeButtons from "../../../components/HomeButtons";
 
-import { useRouter } from "next/navigation";
+import { db } from "../../../drizzle/src/db";
+import { getServerSession } from "next-auth";
 
-import JoinLobbyDialog from "@/components/JoinLobbyDialog";
+export default async function HomePage() {
 
-export default function HomePage() {
+  const session = await getServerSession();
 
-  const router = useRouter();
+ const userId =
+    session?.user?.email;
 
+  const myLobbies =
+    userId
+      ? await db.query.lobbyPlayers.findMany({
+          where: (players, { eq }) =>
+            eq(players.userId, userId),
+        })
+      : [];
   return (
 
     <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-8">
 
       <h1 className="text-4xl font-bold text-white">
-
         Multiplayer Quiz Dashboard
-
       </h1>
 
       <p className="mt-2 text-neutral-400">
-
         Create rooms, challenge players and dominate the leaderboard.
-
       </p>
+
+      {/* Stats Cards */}
 
       <div className="grid md:grid-cols-3 gap-6 mt-10">
 
         <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10">
 
           <Users
-          className="text-orange-500"
-          size={30}
+            className="text-orange-500"
+            size={30}
           />
 
           <h2 className="text-white text-xl mt-4 font-semibold">
-
             Active Lobbies
-
           </h2>
 
           <p className="text-neutral-400 mt-2">
-
-            12 rooms running
-
+            {myLobbies.length} rooms
           </p>
 
         </div>
@@ -57,20 +56,16 @@ export default function HomePage() {
         <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10">
 
           <Gamepad2
-          className="text-orange-500"
-          size={30}
+            className="text-orange-500"
+            size={30}
           />
 
           <h2 className="text-white text-xl mt-4 font-semibold">
-
             Games Played
-
           </h2>
 
           <p className="text-neutral-400 mt-2">
-
             24 matches
-
           </p>
 
         </div>
@@ -78,42 +73,79 @@ export default function HomePage() {
         <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/10">
 
           <Trophy
-          className="text-orange-500"
-          size={30}
+            className="text-orange-500"
+            size={30}
           />
 
           <h2 className="text-white text-xl mt-4 font-semibold">
-
             Wins
-
           </h2>
 
           <p className="text-neutral-400 mt-2">
-
             10 victories
-
           </p>
 
         </div>
 
       </div>
 
-      <div className="flex gap-4 mt-10">
+      {/* Buttons */}
 
-        <button
-          onClick={() =>
-            router.push(
-              "/lobby/create"
-            )
-          }
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 px-6 py-4 rounded-xl text-white font-semibold"
-        >
+      <div className="mt-10">
 
-          <Play size={18}/>
+        <HomeButtons />
 
-          Create Lobby
+      </div>
 
-        </button>
+      {/* Active Lobbies */}
+
+      <div className="mt-10">
+
+        <h2 className="text-white text-2xl font-bold">
+
+          My Active Lobbies
+
+        </h2>
+
+        {myLobbies.length === 0 ? (
+
+          <p className="text-neutral-400 mt-4">
+            No active lobbies
+          </p>
+
+        ) : (
+
+          myLobbies.map((room) => (
+
+            <div
+              key={room.id}
+              className="
+              mt-4
+              bg-white/[0.03]
+              border
+              border-white/10
+              rounded-xl
+              p-4
+              "
+            >
+
+              <p className="text-white">
+
+                Lobby ID:
+                {" "}
+                {room.lobbyId}
+
+              </p>
+
+              <HomeButtons
+                lobbyId={room.lobbyId}
+              />
+
+            </div>
+
+          ))
+
+        )}
 
       </div>
 
@@ -126,5 +158,4 @@ export default function HomePage() {
     </main>
 
   );
-
 }

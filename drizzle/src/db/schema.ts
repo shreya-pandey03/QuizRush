@@ -27,12 +27,23 @@ export const lobbies = pgTable("lobbies", {
 });
 
 /* ================= LOBBY PLAYERS ================= */
-export const lobbyPlayers = pgTable("lobbyPlayers", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  lobbyId: uuid("lobbyId").notNull(),
-  userId: uuid("userId").notNull(),
-  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
-});
+export const lobbyPlayers = pgTable(
+  "lobby_players",
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
+
+    lobbyId: uuid("lobby_id")
+      .notNull(),
+
+    userId: text("user_id")
+      .notNull(),
+
+    joinedAt: timestamp("joined_at")
+      .defaultNow()
+  }
+);
 
 /* ================= QUESTIONS ================= */
 export const questions = pgTable("questions", {
