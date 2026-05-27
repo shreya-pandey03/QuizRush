@@ -18,12 +18,24 @@ export const users = pgTable("users", {
 
 /* ================= LOBBIES ================= */
 export const lobbies = pgTable("lobbies", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  hostId: uuid("hostId").notNull(),
-  code: text("code").notNull().unique(),
-  isStarted: boolean("isStarted").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+
+  id: uuid("id")
+    .defaultRandom()
+    .primaryKey(),
+
+  name: text("name"),
+
+  hostId: text("hostId"),
+
+  code: text("code")
+    .unique(),
+
+  isStarted: boolean("isStarted")
+    .default(false),
+
+  createdAt: timestamp("createdAt")
+    .defaultNow()
+
 });
 
 /* ================= LOBBY PLAYERS ================= */
@@ -59,7 +71,7 @@ export const questions = pgTable("questions", {
 /* ================= SCORES ================= */
 export const scores = pgTable("scores", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("userId").notNull(),
+  userId: text("userId").notNull(),
   lobbyId: uuid("lobbyId").notNull(),
   points: integer("points").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

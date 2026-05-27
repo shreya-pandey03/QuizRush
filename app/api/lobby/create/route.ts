@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { db } from "@/drizzle/src/db";
-import { lobbies } from "@/drizzle/src/db/schema";
+import {
+  lobbies,
+  lobbyPlayers
+} from "@/drizzle/src/db/schema";
 
 function generateCode() {
   return Math.random()
     .toString(36)
-    .substring(2, 8)
+    .substring(2,8)
     .toUpperCase();
 }
 
-export async function POST(
-  req: Request
-) {
-
+export async function POST(req: Request) {
   try {
 
     const {
@@ -20,44 +20,35 @@ export async function POST(
       hostId
     } = await req.json();
 
-    const roomCode =
-      generateCode();
-
-    const lobby =
-      await db
+    const lobby = await db
       .insert(lobbies)
       .values({
         name,
         hostId,
-        code: roomCode
+        code: generateCode()
       })
       .returning();
 
+    // host automatically joins own room
+    await db.insert(lobbyPlayers)
+      .values({
+        lobbyId: lobby[0].id,
+        userId: hostId
+      });
+
     return NextResponse.json({
-
       success:true,
-
-      lobbyId:
-      lobby[0].id,
-
-      roomCode:
-      roomCode
-
+      lobbyId:lobby[0].id,
+      roomCode:lobby[0].code
     });
 
-  } catch(error){
+  } catch(error) {
 
     console.log(error);
 
     return NextResponse.json(
-      {
-        success:false
-      },
-      {
-        status:500
-      }
+      {success:false},
+      {status:500}
     );
-
   }
-
 }

@@ -2,51 +2,25 @@ import { Server, Socket } from "socket.io";
 import { rooms } from "./roomState";
 
 export function quizHandlers(
-  io: Server,
-  socket: Socket
+  io:any,
+  socket:any
 ){
 
-socket.on(
-"startQuiz",
-(roomId:string)=>{
+  socket.on(
+    "joinRoom",
+    (roomId: any)=>{
 
-const room=rooms.get(roomId);
+      socket.join(roomId);
 
-if(!room)return;
+      const count =
+        io.sockets.adapter.rooms
+        .get(roomId)?.size || 0;
 
-room.started=true;
-
-room.currentQuestion=0;
-
-io.to(roomId).emit(
-"quizStarted",
-{
-questionIndex:0
-}
-);
-
-}
-);
-
-socket.on(
-"nextQuestion",
-(roomId:string)=>{
-
-const room=rooms.get(roomId);
-
-if(!room)return;
-
-room.currentQuestion++;
-
-io.to(roomId).emit(
-"questionChanged",
-{
-questionIndex:
-room.currentQuestion
-}
-);
-
-}
-);
+      io.emit(
+        "activeLobbyUpdate",
+        count
+      );
+    }
+  );
 
 }
