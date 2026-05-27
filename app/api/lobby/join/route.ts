@@ -1,65 +1,85 @@
 import { NextResponse } from "next/server";
-
 import { db } from "@/drizzle/src/db";
-
 import {
   lobbies,
-  lobbyPlayers
+  lobbyPlayers,
 } from "@/drizzle/src/db/schema";
 
 import { eq } from "drizzle-orm";
 
-export async function POST(
-  req: Request
-){
+import { getServerSession } from "next-auth";
 
-  try{
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession();
 
-    const {
-      code,
-      userId
-    } = await req.json();
+    const userId = session?.user?.email;
 
-    const lobby =
-      await db.query.lobbies.findFirst({
-
-        where:(lobbies,{eq})=>
-          eq(
-            lobbies.code,
-            code
-          )
-      });
-
-    if(!lobby){
-
-      return NextResponse.json({
-        error:"Lobby not found"
-      });
-
+    if (!userId) {
+      return NextResponse.json(
+        {
+          error: "Please sign in first",
+        },
+        {
+          status: 401,
+        }
+      );
     }
 
-    await db.insert(
-      lobbyPlayers
-    ).values({
+    const { code } = await req.json();
 
-      lobbyId:lobby.id,
-      userId
-
+    const lobby = await db.query.lobbies.findFirst({
+      where: eq(
+        lobbies.code,
+        code.toUpperCase()
+      ),
     });
+
+    if (!lobby) {
+      return NextResponse.json(
+        {
+          error: "Lobby not found",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    // check if already joined
+    const existingPlayer =
+      await db.query.lobbyPlayers.findFirst({
+        where: (players, { and, eq }) =>
+          and(
+            eq(players.userId, userId),
+            eq(players.lobbyId, lobby.id)
+          ),
+      });
+
+    if (!existingPlayer) {
+      await db.insert(
+        lobbyPlayers
+      ).values({
+        lobbyId: lobby.id,
+        userId: userId,
+      });
+    }
 
     return NextResponse.json({
-
-      lobbyId:lobby.id
-
+      success: true,
+      lobbyId: lobby.id,
     });
 
-  }catch(error){
-
+  } catch (error) {
     console.log(error);
 
     return NextResponse.json(
-      {error:"Failed"},
-      {status:500}
+      {
+        error: "Something went wrong",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

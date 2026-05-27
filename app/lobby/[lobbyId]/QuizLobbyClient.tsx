@@ -1,52 +1,69 @@
-"use client"
+"use client";
 
-import useSocket from "@/hooks/useSocket"
-import PlayersList from "@/components/PlayersList"
-import QuestionCard from "@/components/QuestionCard"
-import QuizTimer from "@/components/QuizTimer"
+import { useSession } from "next-auth/react";
+import useSocket from "@/hooks/useSocket";
+import PlayersList from "@/components/PlayersList";
+import QuestionCard from "@/components/QuestionCard";
+import QuizTimer from "@/components/QuizTimer";
 
-interface Props{
-
-lobbyId:string
-
+interface Props {
+  lobbyId: string;
 }
 
 export default function QuizLobbyClient({
+  lobbyId,
+}: Props) {
+  const { data: session, status } = useSession();
 
-lobbyId
+  const userId = (session?.user as { id?: string })?.id;
 
-}:Props){
+  // Connect socket only when both values exist
+  useSocket({
+    lobbyId,
+    userId,
+  });
 
-useSocket()
+  if (status === "loading") {
+    return (
+      <div className="p-6 text-white">
+        Loading...
+      </div>
+    );
+  }
 
-return(
+  if (!session?.user) {
+    return (
+      <div className="p-6 text-red-500">
+        User not found
+      </div>
+    );
+  }
 
-<div className="p-6">
+  if (!lobbyId) {
+    return (
+      <div className="p-6 text-red-500">
+        Invalid lobby
+      </div>
+    );
+  }
 
-<h1
-className="text-2xl font-bold"
->
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-white">
+        Lobby: {lobbyId}
+      </h1>
 
-Lobby:
+      <p className="mt-2 text-neutral-400">
+        Player: {session.user.name ?? "Unknown"}
+      </p>
 
-{lobbyId}
+      <div className="mt-6 space-y-6">
+        <PlayersList  lobbyId={lobbyId}    />
 
-</h1>
+        <QuizTimer />
 
-<div
-className="mt-6"
->
-
-<PlayersList/>
-
-<QuizTimer/>
-
-<QuestionCard/>
-
-</div>
-
-</div>
-
-)
-
+        <QuestionCard lobbyId={lobbyId} />
+      </div>
+    </div>
+  );
 }

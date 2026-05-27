@@ -1,13 +1,13 @@
-export default function PlayersList() {
-  const players = ["Virat", "Anchal", "Shreya"];
+interface PlayersListProps {
+  lobbyId: string;
+}
 
+export default function PlayersList({
+  lobbyId,
+}: PlayersListProps) {
   return (
-    <div>
-      <h2>Players</h2>
-
-      {players.map((p) => (
-        <div key={p}>{p}</div>
-      ))}
+    <div className="rounded-xl bg-white/5 p-4 text-white">
+      Players in lobby: {lobbyId}
     </div>
   );
 }

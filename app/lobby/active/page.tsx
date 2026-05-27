@@ -1,63 +1,104 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import LobbyCard from "@/components/LobbyCard";
+import { io, Socket } from "socket.io-client";
 
-type Lobby = {
+interface Lobby {
   id: string;
   name: string;
-  players: number;
-};
+  code: string;
+  hostId: string;
+  isStarted: boolean;
+}
 
 export default function ActiveLobbiesPage() {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function fetchLobbies() {
-    try {
-      const res = await fetch("/api/lobby/details");
-      const data = await res.json();
-
-      setLobbies(data.lobbies);
-    } catch (err) {
-      console.error("Error fetching lobbies", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchLobbies();
+    const socket: Socket = io("http://localhost:3002");
 
-    // 🔥 auto refresh every 3 seconds (real-time feel)
-    const interval = setInterval(fetchLobbies, 3000);
+    socket.on("connect", () => {
+      console.log(
+        "Connected:",
+        socket.id
+      );
+    });
 
-    return () => clearInterval(interval);
+    socket.on(
+      "activeLobbiesUpdated",
+      (data: Lobby[]) => {
+        setLobbies(data);
+        setLoading(false);
+      }
+    );
+
+    socket.on(
+      "connect_error",
+      (error) => {
+        console.error(
+          "Socket error:",
+          error
+        );
+
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      socket.off("activeLobbiesUpdated");
+      socket.disconnect();
+    };
   }, []);
 
   return (
-    <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-6">
-
-      <h1 className="text-3xl font-bold text-white mb-6">
-        Active Lobbies 🔥
+    <main className="min-h-screen p-6 bg-[oklch(0.06_0.007_38)] text-white">
+      <h1 className="text-3xl font-bold">
+        Active Lobbies
       </h1>
 
       {loading ? (
-        <p className="text-orange-500">Loading lobbies...</p>
+        <div className="mt-6 text-neutral-400">
+          Loading...
+        </div>
+      ) : lobbies.length === 0 ? (
+        <div className="mt-6 text-neutral-400">
+          No Active Lobbies
+        </div>
       ) : (
-        <div className="grid gap-4">
-          {lobbies.length === 0 ? (
-            <p className="text-neutral-400">
-              No active lobbies right now
-            </p>
-          ) : (
-            lobbies.map((lobby) => (
-              <LobbyCard key={lobby.id} lobby={lobby} />
-            ))
-          )}
+        <div className="mt-6 space-y-4">
+          {lobbies.map((lobby) => (
+            <div
+              key={lobby.id}
+              className="
+                rounded-xl
+                bg-white/5
+                border
+                border-white/10
+                p-4
+                hover:border-orange-500/40
+                transition
+              "
+            >
+              <h2 className="text-xl font-semibold">
+                {lobby.name}
+              </h2>
+
+              <p className="text-orange-500 mt-1">
+                Code: {lobby.code}
+              </p>
+
+              <p className="text-sm text-neutral-400 mt-2">
+                Status: {
+                  lobby.isStarted
+                    ? "Started"
+                    : "Waiting"
+                }
+              </p>
+            </div>
+          ))}
         </div>
       )}
-
     </main>
   );
 }

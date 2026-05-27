@@ -1,22 +1,12 @@
-"use client"
+"use client";
 
-import { useLobbyStore }
-from "@/store/lobbyStore"
+import { useLobbyStore } from "@/store/lobbyStore";
 
-export default function useLobby(){
+export default function useLobby() {
+  const { lobby, setLobby } = useLobbyStore();
 
-const {
-
-lobby,
-setLobby
-
-}=useLobbyStore()
-
-return {
-
-lobby,
-setLobby
-
-}
-
+  return {
+    lobby,
+    setLobby,
+  };
 }

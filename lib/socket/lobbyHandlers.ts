@@ -1,13 +1,31 @@
-import { Server } from "socket.io";
+import { db } from "@/drizzle/src/db";
 
-export function lobbyHandlers(io: Server, socket: any) {
-  socket.on(
-    "joinLobby",
+export async function lobbyHandlers(
+  io: any,
+  socket: any
+) {
+  async function sendActiveLobbies() {
+    const lobbies = await db.query.lobbies.findMany({
+      where: (l, { eq }) =>
+        eq(l.isStarted, false),
+    });
 
-    (roomId: string | string[]) => {
-      socket.join(roomId);
+    io.emit("activeLobbiesUpdated", lobbies);
+  }
 
-      io.to(roomId).emit("playerJoined");
-    },
-  );
+  socket.on("createLobby", async () => {
+    await sendActiveLobbies();
+  });
+
+  socket.on("joinLobby", async () => {
+    await sendActiveLobbies();
+  });
+
+  socket.on("leaveLobby", async () => {
+    await sendActiveLobbies();
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
 }

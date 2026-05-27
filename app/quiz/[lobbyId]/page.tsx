@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
+import { useSession } from "next-auth/react";
 
-import { Clock, ChevronRight, ChevronLeft, Trophy } from "lucide-react";
+import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
 
 export default function QuizPage() {
   const params = useParams();
+  const router = useRouter();
 
+  const { data: session } = useSession();
+
+  const [userId, setUserId] = useState("");
   const roomId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
     : String(params.lobbyId);
-
-  const userId = "player123";
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -86,7 +89,33 @@ export default function QuizPage() {
 
   const [quizEnded, setQuizEnded] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    // Logged-in user
+    if (session?.user?.email) {
+      setUserId(session.user.email);
+
+      return;
+    }
+
+    // Guest user
+    let guestId = localStorage.getItem("guestId");
+
+    if (!guestId) {
+      guestId = crypto.randomUUID();
+
+      localStorage.setItem("guestId", guestId);
+    }
+
+    setUserId(guestId);
+  }, [session]);
+
+  // Socket
+
+  useEffect(() => {
+    if (!userId) return;
+
     socketRef.current = io("http://localhost:3002");
 
     socketRef.current.emit("joinRoom", roomId);
@@ -94,10 +123,72 @@ export default function QuizPage() {
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, userId]);
+
+  // Load quiz progress
 
   useEffect(() => {
-    if (quizEnded) return;
+    if (!userId) return;
+
+    async function loadProgress() {
+      try {
+        const res = await fetch(
+          `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`,
+        );
+
+        const data = await res.json();
+
+        if (data?.id) {
+          setCurrentQuestion(data.currentQuestion ?? 0);
+
+          setAnswers(data.answers ?? Array(questions.length).fill(""));
+
+          setScore(data.score ?? 0);
+
+          setQuizEnded(data.quizEnded ?? false);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProgress();
+  }, [userId]);
+
+  // Save quiz progress
+
+  useEffect(() => {
+    if (loading || !userId) return;
+
+    fetch("/api/quiz-progress", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        lobbyId: roomId,
+
+        userId,
+
+        currentQuestion,
+
+        answers,
+
+        score,
+
+        quizEnded,
+      }),
+    });
+  }, [currentQuestion, answers, score, quizEnded, loading, userId, roomId]);
+
+  // Timer
+
+  useEffect(() => {
+    if (loading || quizEnded) return;
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -120,7 +211,7 @@ export default function QuizPage() {
         clearInterval(timerRef.current);
       }
     };
-  }, [currentQuestion, quizEnded]);
+  }, [currentQuestion, quizEnded, loading]);
 
   function finishQuiz() {
     let finalScore = 0;
@@ -160,13 +251,14 @@ export default function QuizPage() {
     newAnswers[currentQuestion] = option;
 
     setAnswers(newAnswers);
+  }
 
-    socketRef.current?.emit("submitAnswer", {
-      roomId,
-      userId,
-
-      correct: option === questions[currentQuestion].answer,
-    });
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-black text-white">
+        Loading quiz...
+      </main>
+    );
   }
 
   if (quizEnded) {
@@ -177,12 +269,20 @@ export default function QuizPage() {
             <Trophy size={60} className="mx-auto text-orange-500" />
 
             <h1 className="text-center text-white text-4xl font-bold mt-4">
-              Quiz Finished
+              Quiz Finished 🎉
             </h1>
 
-            <p className="text-center text-orange-500 text-3xl font-bold mt-4">
+            <p className="text-center text-orange-500 text-3xl font-bold mt-5">
               Score: {score}/{questions.length}
             </p>
+
+            <button
+              onClick={() => router.push("/home")}
+              className="w-full mt-8 bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+            >
+              <Home size={18} />
+              Back To Home
+            </button>
 
             <div className="space-y-5 mt-10">
               {questions.map((q, index) => (
@@ -200,16 +300,16 @@ export default function QuizPage() {
                         key={option}
                         className={`p-3 rounded-lg
 
-      ${
-        option === q.answer
-          ? "bg-green-600"
-          : option === answers[index] && answers[index] !== q.answer
-            ? "bg-red-600"
-            : "bg-white/5"
-      }
+                            ${
+                              option === q.answer
+                                ? "bg-green-600"
+                                : option === answers[index] &&
+                                    answers[index] !== q.answer
+                                  ? "bg-red-600"
+                                  : "bg-white/5"
+                            }
 
-      text-white
-      `}
+                            text-white`}
                       >
                         {option}
                       </div>
@@ -252,13 +352,13 @@ export default function QuizPage() {
                 onClick={() => submitAnswer(option)}
                 className={`w-full p-4 rounded-xl border
 
-    ${
-      answers[currentQuestion] === option
-        ? "bg-orange-500 border-orange-500"
-        : "bg-black border-white/10 hover:border-orange-500"
-    }
+                    ${
+                      answers[currentQuestion] === option
+                        ? "bg-orange-500 border-orange-500"
+                        : "bg-black border-white/10 hover:border-orange-500"
+                    }
 
-    text-white transition`}
+                    text-white`}
               >
                 {option}
               </button>
@@ -269,7 +369,7 @@ export default function QuizPage() {
             <button
               onClick={movePrevious}
               disabled={currentQuestion === 0}
-              className="flex-1 border border-white/10 rounded-xl py-4 text-white disabled:opacity-50"
+              className="flex-1 border border-white/10 py-4 rounded-xl text-white disabled:opacity-50"
             >
               <div className="flex justify-center gap-2">
                 <ChevronLeft size={18} />
@@ -280,14 +380,14 @@ export default function QuizPage() {
             {currentQuestion === questions.length - 1 ? (
               <button
                 onClick={finishQuiz}
-                className="flex-1 bg-green-600 hover:bg-green-700 rounded-xl py-4 text-white font-semibold"
+                className="flex-1 bg-green-600 py-4 rounded-xl text-white"
               >
-                Submit Quiz ✅
+                Submit Quiz
               </button>
             ) : (
               <button
                 onClick={moveNext}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 rounded-xl py-4 text-white font-semibold"
+                className="flex-1 bg-orange-500 py-4 rounded-xl text-white"
               >
                 <div className="flex justify-center gap-2">
                   Next Question

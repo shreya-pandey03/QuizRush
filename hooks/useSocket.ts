@@ -1,42 +1,27 @@
-"use client"
+import { useEffect } from "react";
+import { io } from "socket.io-client";
 
-import { useEffect } from "react"
-import { socket } from "@/lib/socket"
-import { useSocketStore } from "@/store/socketStore"
-
-export default function useSocket(){
-
-const {setConnected}=useSocketStore()
-
-useEffect(()=>{
-
-socket.connect()
-
-socket.on(
-"connect",
-()=>{
-
-setConnected(true)
-
-}
-)
-
-socket.on(
-"disconnect",
-()=>{
-
-setConnected(false)
-
-}
-)
-
-return ()=>{
-
-socket.off("connect")
-socket.off("disconnect")
-
+interface SocketProps {
+  lobbyId: string;
+  userId?: string;
 }
 
-},[])
+export default function useSocket({
+  lobbyId,
+  userId,
+}: SocketProps) {
+  useEffect(() => {
+    if (!lobbyId || !userId) return;
 
+    const socket = io("http://localhost:3002");
+
+    socket.emit("joinRoom", {
+      lobbyId,
+      userId,
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [lobbyId, userId]);
 }

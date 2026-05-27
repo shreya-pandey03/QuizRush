@@ -1,52 +1,40 @@
-"use client"
+"use client";
 
-import {useEffect,useState}
-from "react"
+import { useEffect, useState } from "react";
 
-export default function QuizTimer(){
-
-const [time,setTime]=
-useState(30)
-
-useEffect(()=>{
-
-const interval=
-setInterval(()=>{
-
-setTime((prev)=>{
-
-if(prev<=1){
-
-clearInterval(
-interval
-)
-
-return 0
-
+interface QuizTimerProps {
+  initialTime: number;
 }
 
-return prev-1
+export default function QuizTimer({
+  initialTime,
+}: QuizTimerProps) {
+  const [time, setTime] = useState(initialTime);
 
-})
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
 
-},1000)
+        return prev - 1;
+      });
+    }, 1000);
 
-return ()=>clearInterval(
-interval
-)
+    return () => clearInterval(interval);
+  }, []);
 
-},[])
+  return (
+    <div>
+      <h2 className="text-white font-semibold">
+        Quiz Timer
+      </h2>
 
-return(
-
-<div>
-
-Time:
-
-{time}
-
-</div>
-
-)
-
+      <p className="text-2xl text-orange-500 mt-2">
+        ⏱ {time}s
+      </p>
+    </div>
+  );
 }

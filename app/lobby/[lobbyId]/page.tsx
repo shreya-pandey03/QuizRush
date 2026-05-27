@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Users, Copy, Play, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import QuizLobbyClient from "./QuizLobbyClient";
 
 export default function LobbyRoomPage() {
   const params = useParams();
@@ -15,18 +16,20 @@ export default function LobbyRoomPage() {
 
   const lobbyId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
-    : String(params.lobbyId);
+    : params.lobbyId?.toString() ?? "";
+
+  console.log("Lobby page id:", lobbyId);
 
   useEffect(() => {
+    if (!lobbyId) return;
+
     socketRef.current = io("http://localhost:3002");
 
     const socket = socketRef.current;
 
-    if (lobbyId) {
-      socket.emit("joinRoom", lobbyId);
+    socket.emit("joinRoom", lobbyId);
 
-      console.log("Joined room:", lobbyId);
-    }
+    console.log("Joined room:", lobbyId);
 
     return () => {
       socket.disconnect();
@@ -50,9 +53,7 @@ export default function LobbyRoomPage() {
   }
 
   function startQuiz() {
-    if (!lobbyId || !socketRef.current) {
-      return;
-    }
+    if (!socketRef.current || !lobbyId) return;
 
     socketRef.current.emit("startQuiz", lobbyId);
 
@@ -62,15 +63,23 @@ export default function LobbyRoomPage() {
   return (
     <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-8">
       <div className="max-w-4xl mx-auto">
+
+        {/* Quiz progress component */}
+        <QuizLobbyClient lobbyId={lobbyId} />
+
         <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8">
-          <h1 className="text-4xl font-bold text-white">Quiz Lobby 🎮</h1>
+          <h1 className="text-4xl font-bold text-white">
+            Quiz Lobby 🎮
+          </h1>
 
           <p className="text-neutral-400 mt-2">
             Waiting for players to join...
           </p>
 
           <div className="mt-8 p-5 rounded-xl bg-black border border-white/10">
-            <p className="text-neutral-400">Room ID</p>
+            <p className="text-neutral-400">
+              Room ID
+            </p>
 
             <div className="flex items-center justify-between mt-2">
               <span className="text-orange-500 font-bold text-lg">
