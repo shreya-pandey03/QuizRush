@@ -6,6 +6,15 @@ import { timerHandlers } from "@/lib/socket/timerHandlers";
 
 import { scoreHandlers } from "@/lib/socket/scoreHandlers";
 
+const lobbyPlayers:
+Record<
+  string,
+  {
+    socketId: string;
+    userId: string;
+  }[]
+> = {};
+
 const io = new Server(3002, {
   cors: {
     origin: "http://localhost:3001",
@@ -17,20 +26,114 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // join multiplayer room
-  socket.on("joinRoom", (roomId: string) => {
-    socket.join(roomId);
+socket.on(
+  "joinRoom",
+  ({
+    roomId,
+    userId,
+  }: {
+    roomId: string;
+    userId: string;
+  }) => {
 
-    console.log(`${socket.id} joined ${roomId}`);
-  });
+    socket.join(
+      roomId
+    );
+
+    console.log(
+      `${userId} joined ${roomId}`
+    );
+
+    // Create room if missing
+
+    if (
+      !lobbyPlayers[
+        roomId
+      ]
+    ) {
+
+      lobbyPlayers[
+        roomId
+      ] = [];
+
+    }
+
+    // Prevent duplicates
+
+    const exists =
+      lobbyPlayers[
+        roomId
+      ].find(
+        player =>
+          player.userId ===
+          userId
+      );
+
+    if (!exists) {
+
+      lobbyPlayers[
+        roomId
+      ].push({
+        socketId:
+          socket.id,
+        userId,
+      });
+
+    }
+
+    // Send updated players
+
+    io.to(roomId).emit(
+      "playersUpdate",
+      lobbyPlayers[
+        roomId
+      ]
+    );
+
+  }
+);
 
   quizHandlers(io, socket);
 
   scoreHandlers(io, socket);
 
-  socket.on("disconnect", () => {
-    console.log("Disconnected:", socket.id);
-  });
-});
+socket.on(
+  "disconnect",
+  () => {
+
+    Object.keys(
+      lobbyPlayers
+    ).forEach(
+      roomId => {
+
+        lobbyPlayers[
+          roomId
+        ] =
+          lobbyPlayers[
+            roomId
+          ].filter(
+            player =>
+              player.socketId !==
+              socket.id
+          );
+
+        io.to(roomId).emit(
+          "playersUpdate",
+          lobbyPlayers[
+            roomId
+          ]
+        );
+
+      }
+    );
+
+    console.log(
+      "Disconnected:",
+      socket.id
+    );
+
+  }
+);
 
 timerHandlers(io);
 
