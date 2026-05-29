@@ -1,16 +1,23 @@
-type PlayerScore = {
-  userId: string;
-  score: number;
+export type Player = {
+  id: string;
+  name: string;
 };
 
-type RoomState = {
+export type RoomState = {
+  players: Player[];
+
   currentQuestion: number;
-  timeLeft: number;
-  started: boolean;
-  scores: PlayerScore[];
+
+  quizStarted: boolean;
+
+  scores: Record<
+    string,
+    number
+  >;
 };
 
-export const rooms = new Map<
+export const rooms:
+Record<
   string,
   RoomState
->();
+> = {};

@@ -6,130 +6,59 @@ import { timerHandlers } from "@/lib/socket/timerHandlers";
 
 import { scoreHandlers } from "@/lib/socket/scoreHandlers";
 
-const lobbyPlayers:
-Record<
-  string,
+import { playerHandlers } from "@/lib/socket/playerHandlers";
+
+const io = new Server(
+  3002,
   {
-    socketId: string;
-    userId: string;
-  }[]
-> = {};
+    cors: {
+      origin:
+        "http://localhost:3001",
 
-const io = new Server(3002, {
-  cors: {
-    origin: "http://localhost:3001",
-    methods: ["GET", "POST"],
-  },
-});
-
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  // join multiplayer room
-socket.on(
-  "joinRoom",
-  ({
-    roomId,
-    userId,
-  }: {
-    roomId: string;
-    userId: string;
-  }) => {
-
-    socket.join(
-      roomId
-    );
-
-    console.log(
-      `${userId} joined ${roomId}`
-    );
-
-    // Create room if missing
-
-    if (
-      !lobbyPlayers[
-        roomId
-      ]
-    ) {
-
-      lobbyPlayers[
-        roomId
-      ] = [];
-
-    }
-
-    // Prevent duplicates
-
-    const exists =
-      lobbyPlayers[
-        roomId
-      ].find(
-        player =>
-          player.userId ===
-          userId
-      );
-
-    if (!exists) {
-
-      lobbyPlayers[
-        roomId
-      ].push({
-        socketId:
-          socket.id,
-        userId,
-      });
-
-    }
-
-    // Send updated players
-
-    io.to(roomId).emit(
-      "playersUpdate",
-      lobbyPlayers[
-        roomId
-      ]
-    );
-
+      methods: [
+        "GET",
+        "POST",
+      ],
+    },
   }
 );
 
-  quizHandlers(io, socket);
+io.on(
+  "connection",
+  (
+    socket
+  ) => {
 
-  scoreHandlers(io, socket);
+    console.log(
+      "User connected:",
+      socket.id
+    );
 
-socket.on(
-  "disconnect",
-  () => {
+    playerHandlers(
+      io,
+      socket
+    );
 
-    Object.keys(
-      lobbyPlayers
-    ).forEach(
-      roomId => {
+    quizHandlers(
+      io,
+      socket
+    );
 
-        lobbyPlayers[
-          roomId
-        ] =
-          lobbyPlayers[
-            roomId
-          ].filter(
-            player =>
-              player.socketId !==
-              socket.id
-          );
+    scoreHandlers(
+      io,
+      socket
+    );
 
-        io.to(roomId).emit(
-          "playersUpdate",
-          lobbyPlayers[
-            roomId
-          ]
+    socket.on(
+      "disconnect",
+      () => {
+
+        console.log(
+          "Disconnected:",
+          socket.id
         );
 
       }
-    );
-
-    console.log(
-      "Disconnected:",
-      socket.id
     );
 
   }
@@ -137,4 +66,6 @@ socket.on(
 
 timerHandlers(io);
 
-console.log("Socket server running on port 3002");
+console.log(
+  "Socket server running on port 3002"
+);
