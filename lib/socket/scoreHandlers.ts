@@ -1,59 +1,65 @@
 import { Server, Socket } from "socket.io";
-import { rooms } from "./roomState";
+
+import { gameStore } from "@/lib/game/gameStore";
 
 export function scoreHandlers(
-io:Server,
-socket:Socket
-){
+  io: Server,
+  socket: Socket
+) {
+  socket.on(
+    "submit-answer",
+    ({
+      lobbyId,
+      answer,
+    }) => {
 
-socket.on(
-"submitAnswer",
-({
-roomId,
-userId,
-correct
-})=>{
+      const lobby =
+        gameStore.get(
+          lobbyId
+        );
 
-const room=
-rooms.get(roomId);
+      if (!lobby) return;
 
-if(!room)
-return;
+      const question =
+        lobby.questions[
+          lobby.currentQuestionIndex
+        ];
 
-let player=
-room.scores.find(
-p=>
-p.userId===userId
-);
+      const player =
+        lobby.players.find(
+          (p) =>
+            p.id ===
+            socket.id
+        );
 
-if(!player){
+      if (!player) return;
 
-player={
+      if (
+        player.answered
+      )
+        return;
 
-userId,
-score:0
+      player.answered =
+        true;
 
-};
+      if (
+        answer ===
+        question.answer
+      ) {
 
-room.scores.push(
-player
-);
+        player.score += 10;
 
-}
+      }
 
-if(correct){
+      io.to(lobbyId).emit(
+        "leaderboard-update",
+        lobby.players.sort(
+          (a, b) =>
+            b.score -
+            a.score
+        )
+      );
 
-player.score++;
-
-}
-
-io.to(roomId).emit(
-"scoreUpdated",
-room.scores
-);
-
-}
-
-);
-
+    }
+  );
 }

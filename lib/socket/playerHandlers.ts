@@ -1,135 +1,72 @@
-import {
-  Server,
-  Socket,
-} from "socket.io";
+import { Server, Socket } from "socket.io";
 
 import {
-  rooms,
-  Player,
-} from "./roomState";
+  gameStore,
+} from "../game/gameStore";
 
 export function playerHandlers(
   io: Server,
-  socket: Socket,
+  socket: Socket
 ) {
 
   socket.on(
-    "joinRoomWithUser",
+    "join-lobby",
     ({
-      roomId,
-      user,
-    }: {
-      roomId: string;
-
-      user: Player;
+      lobbyId,
+      player,
     }) => {
 
-      socket.join(
-        roomId
-      );
+      let lobby =
+        gameStore.get(
+          lobbyId
+        );
 
-      // Create room if missing
+      if (!lobby) {
 
-      if (
-        !rooms[roomId]
-      ) {
+        lobby = {
+          id: lobbyId,
 
-        rooms[
-          roomId
-        ] = {
+          hostId:
+            player.id,
 
           players: [],
 
-          currentQuestion: 0,
+          currentQuestionIndex:
+            0,
 
-          quizStarted: false,
+          questions: [],
 
-          scores: {},
+          timer: 15,
 
+          started: false,
         };
 
+        gameStore.set(
+          lobbyId,
+          lobby
+        );
       }
 
-      // Prevent duplicates
-
-      const exists =
-        rooms[
-          roomId
-        ].players.find(
-          (
-            player
-          ) =>
-            player.id ===
-            user.id
-        );
-
-      if (!exists) {
-
-        rooms[
-          roomId
-        ].players.push(
-          user
-        );
-
-      }
-
-      // Send updated players
-
-      io.to(roomId).emit(
-        "playersUpdated",
-        rooms[
-          roomId
-        ].players
+      socket.join(
+        lobbyId
       );
 
-      console.log(
-        `${user.name} joined ${roomId}`
-      );
+      lobby.players.push({
+        id: player.id,
 
+        name:
+          player.name,
+
+        score: 0,
+
+        answered:
+          false,
+      });
+
+      io.to(lobbyId).emit(
+        "players-update",
+        lobby.players
+      );
     }
   );
-
-  socket.on(
-    "disconnecting",
-    () => {
-
-      socket.rooms.forEach(
-        (
-          roomId
-        ) => {
-
-          if (
-            rooms[
-              roomId
-            ]
-          ) {
-
-            rooms[
-              roomId
-            ].players =
-              rooms[
-                roomId
-              ].players.filter(
-                (
-                  player
-                ) =>
-                  player.id !==
-                  socket.id
-              );
-
-            io.to(roomId).emit(
-              "playersUpdated",
-              rooms[
-                roomId
-              ].players
-            );
-
-          }
-
-        }
-      );
-
-    }
-  );
-
 }
