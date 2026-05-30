@@ -10,9 +10,7 @@ interface Props {
   lobbyId: string;
 }
 
-export default function QuizLobbyClient({
-  lobbyId,
-}: Props) {
+export default function QuizLobbyClient({ lobbyId }: Props) {
   const { data: session, status } = useSession();
 
   const userId = (session?.user as { id?: string })?.id;
@@ -20,49 +18,38 @@ export default function QuizLobbyClient({
   // Connect socket only when both values exist
   useSocket({
     lobbyId,
+
     userId,
+
+    playerName: session?.user?.name ?? "Player",
   });
 
   if (status === "loading") {
-    return (
-      <div className="p-6 text-white">
-        Loading...
-      </div>
-    );
+    return <div className="p-6 text-white">Loading...</div>;
   }
 
   if (!session?.user) {
-    return (
-      <div className="p-6 text-red-500">
-        User not found
-      </div>
-    );
+    return <div className="p-6 text-red-500">User not found</div>;
   }
 
   if (!lobbyId) {
-    return (
-      <div className="p-6 text-red-500">
-        Invalid lobby
-      </div>
-    );
+    return <div className="p-6 text-red-500">Invalid lobby</div>;
   }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-white">
-        Lobby: {lobbyId}
-      </h1>
+      <h1 className="text-2xl font-bold text-white">Lobby: {lobbyId}</h1>
 
       <p className="mt-2 text-neutral-400">
         Player: {session.user.name ?? "Unknown"}
       </p>
 
       <div className="mt-6 space-y-6">
-        <PlayersList  lobbyId={lobbyId}    />
+        <PlayersList />
 
         <QuizTimer />
 
-        <QuestionCard lobbyId={lobbyId} />
+        <QuestionCard />
       </div>
     </div>
   );

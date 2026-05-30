@@ -1,29 +1,22 @@
 import { create } from "zustand";
 
-interface QuizState {
+type Question = {
   question: string;
+  options: string[];
+  answer: string;
+};
 
-  score: number;
+interface QuizStore {
+  question: Question | null;
 
-  setQuestion: (value: string) => void;
-
-  setScore: (value: number) => void;
+  setQuestion: (question: Question) => void;
 }
 
-export const useQuizStore = create<QuizState>((set) => ({
-  question: "",
+export const useQuizStore = create<QuizStore>((set) => ({
+  question: null,
 
-  score: 0,
-
-  setQuestion: (value) => {
+  setQuestion: (question) =>
     set({
-      question: value,
-    });
-  },
-
-  setScore: (value) => {
-    set({
-      score: value,
-    });
-  },
+      question,
+    }),
 }));

@@ -1,17 +1,16 @@
 import { create } from "zustand";
 
-interface TimerState {
-  time: number;
+interface TimerStore {
+  timeLeft: number;
 
-  setTime: (value: number) => void;
+  setTimeLeft: (time: number) => void;
 }
 
-export const useTimerStore = create<TimerState>((set) => ({
-  time: 30,
+export const useTimerStore = create<TimerStore>((set) => ({
+  timeLeft: 15,
 
-  setTime: (value) => {
+  setTimeLeft: (time) =>
     set({
-      time: value,
-    });
-  },
+      timeLeft: time,
+    }),
 }));

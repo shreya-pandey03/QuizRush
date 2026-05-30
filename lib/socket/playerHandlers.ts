@@ -1,72 +1,54 @@
 import { Server, Socket } from "socket.io";
 
-import {
-  gameStore,
-} from "../game/gameStore";
+import { gameStore } from "./gameStore";
 
-export function playerHandlers(
-  io: Server,
-  socket: Socket
-) {
+export function playerHandlers(io: Server, socket: Socket) {
+  socket.on("join-lobby", ({ lobbyId, player }) => {
+    const lobby = gameStore.get(lobbyId);
+
+    if (!lobby) return;
+
+    socket.join(lobbyId);
+
+    const exists = lobby.players.find((p) => p.id === player.id);
+
+    if (!exists) {
+      lobby.players.push({
+        ...player,
+        score: 0,
+        answered: false,
+      });
+    }
+
+    io.to(lobbyId).emit("players-update", lobby.players);
+  });
 
   socket.on(
-    "join-lobby",
-    ({
+  "create-lobby",
+  ({
+    lobbyId,
+    hostId,
+  }) => {
+
+    gameStore.set(
       lobbyId,
-      player,
-    }) => {
+      {
+        id: lobbyId,
 
-      let lobby =
-        gameStore.get(
-          lobbyId
-        );
+        hostId,
 
-      if (!lobby) {
+        players: [],
 
-        lobby = {
-          id: lobbyId,
+        questions: [],
 
-          hostId:
-            player.id,
+        currentQuestionIndex: 0,
 
-          players: [],
+        timer: 15,
 
-          currentQuestionIndex:
-            0,
-
-          questions: [],
-
-          timer: 15,
-
-          started: false,
-        };
-
-        gameStore.set(
-          lobbyId,
-          lobby
-        );
+        started: false,
       }
+    );
 
-      socket.join(
-        lobbyId
-      );
-
-      lobby.players.push({
-        id: player.id,
-
-        name:
-          player.name,
-
-        score: 0,
-
-        answered:
-          false,
-      });
-
-      io.to(lobbyId).emit(
-        "players-update",
-        lobby.players
-      );
-    }
-  );
+  }
+);
 }

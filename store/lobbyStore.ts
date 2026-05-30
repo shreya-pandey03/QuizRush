@@ -1,22 +1,22 @@
 import { create } from "zustand";
 
-interface Lobby {
+type Player = {
   id: string;
   name: string;
+  score: number;
+};
+
+interface LobbyStore {
+  players: Player[];
+
+  setPlayers: (players: Player[]) => void;
 }
 
-interface LobbyState {
-  lobby: Lobby | null;
+export const useLobbyStore = create<LobbyStore>((set) => ({
+  players: [],
 
-  setLobby: (data: Lobby) => void;
-}
-
-export const useLobbyStore = create<LobbyState>((set) => ({
-  lobby: null,
-
-  setLobby: (data) => {
+  setPlayers: (players) =>
     set({
-      lobby: data,
-    });
-  },
+      players,
+    }),
 }));

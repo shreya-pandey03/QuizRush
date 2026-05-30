@@ -1,65 +1,27 @@
 import { Server, Socket } from "socket.io";
 
-import { gameStore } from "@/lib/game/gameStore";
+import { gameStore } from "./gameStore";
 
-export function scoreHandlers(
-  io: Server,
-  socket: Socket
-) {
-  socket.on(
-    "submit-answer",
-    ({
-      lobbyId,
-      answer,
-    }) => {
+export function scoreHandlers(io: Server, socket: Socket) {
+  socket.on("submit-answer", ({ lobbyId, playerId, answer }) => {
+    const lobby = gameStore.get(lobbyId);
 
-      const lobby =
-        gameStore.get(
-          lobbyId
-        );
+    if (!lobby) return;
 
-      if (!lobby) return;
+    const player = lobby.players.find((p) => p.id === playerId);
 
-      const question =
-        lobby.questions[
-          lobby.currentQuestionIndex
-        ];
+    if (!player) return;
 
-      const player =
-        lobby.players.find(
-          (p) =>
-            p.id ===
-            socket.id
-        );
+    if (player.answered) return;
 
-      if (!player) return;
+    const question = lobby.questions[lobby.currentQuestionIndex];
 
-      if (
-        player.answered
-      )
-        return;
-
-      player.answered =
-        true;
-
-      if (
-        answer ===
-        question.answer
-      ) {
-
-        player.score += 10;
-
-      }
-
-      io.to(lobbyId).emit(
-        "leaderboard-update",
-        lobby.players.sort(
-          (a, b) =>
-            b.score -
-            a.score
-        )
-      );
-
+    if (answer === question.answer) {
+      player.score += 10;
     }
-  );
+
+    player.answered = true;
+
+    io.to(lobbyId).emit("leaderboard-update", lobby.players);
+  });
 }

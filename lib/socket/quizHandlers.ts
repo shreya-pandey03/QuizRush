@@ -1,26 +1,19 @@
 import { Server, Socket } from "socket.io";
-import { rooms } from "./roomState";
 
-export function quizHandlers(
-  io:any,
-  socket:any
-){
+import { gameStore } from "./gameStore";
 
-  socket.on(
-    "joinRoom",
-    (roomId: any)=>{
+import { startTimer } from "./timers";
 
-      socket.join(roomId);
+export function quizHandlers(io: Server, socket: Socket) {
+  socket.on("start-quiz", async ({ lobbyId }) => {
+    const lobby = gameStore.get(lobbyId);
 
-      const count =
-        io.sockets.adapter.rooms
-        .get(roomId)?.size || 0;
+    if (!lobby) return;
 
-      io.emit(
-        "activeLobbyUpdate",
-        count
-      );
-    }
-  );
+    lobby.started = true;
 
+    io.to(lobbyId).emit("quiz-started", lobby.questions[0]);
+
+    startTimer(io, lobbyId);
+  });
 }
