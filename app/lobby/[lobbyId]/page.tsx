@@ -6,20 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import QuizLobbyClient from "./QuizLobbyClient";
 
-type Player = {
-  id: string;
-  name: string;
-};
-
 export default function LobbyRoomPage() {
   const params = useParams();
+ 
   const router = useRouter();
 
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<
     {
       id: string;
-
       name: string;
     }[]
   >([]);
@@ -336,6 +331,8 @@ export default function LobbyRoomPage() {
             />
             {players.length} online
           </div>
+
+          
         </div>
 
         {/* ── Main card ── */}

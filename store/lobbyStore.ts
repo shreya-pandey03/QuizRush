@@ -14,9 +14,5 @@ interface LobbyStore {
 
 export const useLobbyStore = create<LobbyStore>((set) => ({
   players: [],
-
-  setPlayers: (players) =>
-    set({
-      players,
-    }),
+  setPlayers: (players) => set({ players }),
 }));

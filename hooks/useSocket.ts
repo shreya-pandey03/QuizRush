@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { io } from "socket.io-client";
+import { socket } from "@/lib/socket/client";
+
 import { useLobbyStore } from "@/store/lobbyStore";
-
 import { useTimerStore } from "@/store/timerStore";
-
 import { useQuizStore } from "@/store/quizStore";
+import { useLeaderboardStore } from "@/store/leaderboardStore";
+
 interface SocketProps {
   lobbyId: string;
   userId?: string;
@@ -17,42 +18,60 @@ export default function useSocket({
   playerName,
 }: SocketProps) {
   useEffect(() => {
-    if (!lobbyId || !userId) return;
+    if (!lobbyId || !userId || userId.trim() === "") return;
 
-    const socket = io("http://localhost:3002");
     const { setPlayers } = useLobbyStore.getState();
-
     const { setTimeLeft } = useTimerStore.getState();
-
     const { setQuestion } = useQuizStore.getState();
+    const { setLeaderboard } =
+      useLeaderboardStore.getState();
 
-    socket.emit("join-lobby", {
+    // connect only once
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    console.log("JOIN EMIT", {
       lobbyId,
-
-      player: {
-        id: userId,
-
-        name: playerName ?? "Player",
-      },
+      userId,
+      playerName,
     });
 
-    socket.on("players-update", setPlayers);
+ socket.emit("join-lobby", {
+  lobbyId,
+  player: {
+    id: userId,
+    name: playerName ?? "Player",
+  },
+});
+
+    // cleanup previous listeners first
+    socket.off("players-update");
+    socket.off("timer-update");
+    socket.off("quiz-started");
+    socket.off("next-question");
+    socket.off("leaderboard-update");
+
+    socket.on("players-update", (players) => {
+      console.log("PLAYERS UPDATE RECEIVED", players);
+      setPlayers(players);
+    });
 
     socket.on("timer-update", setTimeLeft);
-
     socket.on("quiz-started", setQuestion);
-
     socket.on("next-question", setQuestion);
-
-    socket.on("leaderboard-update", (leaderboard) => {
-      console.log("Leaderboard:", leaderboard);
-    });
+    socket.on("leaderboard-update", setLeaderboard);
 
     socket.on("quiz-ended", (results) => {
       console.log("Results:", results);
     });
 
     return () => {
+      socket.off("players-update");
+      socket.off("timer-update");
+      socket.off("quiz-started");
+      socket.off("next-question");
+      socket.off("leaderboard-update");
       socket.disconnect();
     };
   }, [lobbyId, userId, playerName]);

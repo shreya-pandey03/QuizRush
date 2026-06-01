@@ -6,6 +6,8 @@ import PlayersList from "@/components/PlayersList";
 import QuestionCard from "@/components/QuestionCard";
 import QuizTimer from "@/components/QuizTimer";
 
+import ScoreBoard from "@/components/ScoreBoard";
+
 interface Props {
   lobbyId: string;
 }
@@ -13,17 +15,17 @@ interface Props {
 export default function QuizLobbyClient({ lobbyId }: Props) {
   const { data: session, status } = useSession();
 
-  const userId = (session?.user as { id?: string })?.id;
+  const userId = session?.user?.email ?? "";
 
+  console.log("Session:", session);
+  console.log("User ID:", (session?.user as { id?: string })?.id);
   // Connect socket only when both values exist
   useSocket({
     lobbyId,
-
     userId,
-
     playerName: session?.user?.name ?? "Player",
   });
-
+  console.log("Lobby ID:", lobbyId);
   if (status === "loading") {
     return <div className="p-6 text-white">Loading...</div>;
   }
@@ -49,7 +51,9 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
 
         <QuizTimer />
 
-        <QuestionCard />
+        <QuestionCard lobbyId={lobbyId} />
+
+        <ScoreBoard />
       </div>
     </div>
   );

@@ -4,13 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
-
 import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
 
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
-
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState("");
@@ -19,384 +17,361 @@ export default function QuizPage() {
     : String(params.lobbyId);
 
   const socketRef = useRef<Socket | null>(null);
-
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const questions = [
-    {
-      question: "What is the capital of India?",
-      options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
-      answer: "Delhi",
-    },
-
-    {
-      question: "2 + 2 = ?",
-      options: ["2", "4", "8", "10"],
-      answer: "4",
-    },
-
-    {
-      question: "Largest planet?",
-      options: ["Earth", "Mars", "Jupiter", "Venus"],
-      answer: "Jupiter",
-    },
-
-    {
-      question: "HTML stands for?",
-      options: [
-        "Hyper Text Markup Language",
-        "Home Tool Markup Language",
-        "Hyper Tool",
-        "Markup Text",
-      ],
-      answer: "Hyper Text Markup Language",
-    },
-
-    {
-      question: "React created by?",
-      options: ["Google", "Meta", "Microsoft", "Netflix"],
-      answer: "Meta",
-    },
-
-    {
-      question: "5 × 6 = ?",
-      options: ["30", "40", "20", "10"],
-      answer: "30",
-    },
-
-    {
-      question: "Fastest animal?",
-      options: ["Lion", "Tiger", "Cheetah", "Elephant"],
-      answer: "Cheetah",
-    },
-
-    {
-      question: "CSS used for?",
-      options: ["Database", "Styling", "Backend", "Authentication"],
-      answer: "Styling",
-    },
+    { question: "What is the capital of India?", options: ["Mumbai", "Delhi", "Chennai", "Kolkata"], answer: "Delhi" },
+    { question: "2 + 2 = ?", options: ["2", "4", "8", "10"], answer: "4" },
+    { question: "Largest planet?", options: ["Earth", "Mars", "Jupiter", "Venus"], answer: "Jupiter" },
+    { question: "HTML stands for?", options: ["Hyper Text Markup Language", "Home Tool Markup Language", "Hyper Tool", "Markup Text"], answer: "Hyper Text Markup Language" },
+    { question: "React created by?", options: ["Google", "Meta", "Microsoft", "Netflix"], answer: "Meta" },
+    { question: "5 × 6 = ?", options: ["30", "40", "20", "10"], answer: "30" },
+    { question: "Fastest animal?", options: ["Lion", "Tiger", "Cheetah", "Elephant"], answer: "Cheetah" },
+    { question: "CSS used for?", options: ["Database", "Styling", "Backend", "Authentication"], answer: "Styling" },
   ];
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
-
-  const [answers, setAnswers] = useState<string[]>(
-    Array(questions.length).fill(""),
-  );
-
+  const [answers, setAnswers] = useState<string[]>(Array(questions.length).fill(""));
   const [score, setScore] = useState(0);
-
   const [timeLeft, setTimeLeft] = useState(30);
-
   const [quizEnded, setQuizEnded] = useState(false);
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Logged-in user
-    if (session?.user?.email) {
-      setUserId(session.user.email);
-
-      return;
-    }
-
-    // Guest user
+    if (session?.user?.email) { setUserId(session.user.email); return; }
     let guestId = localStorage.getItem("guestId");
-
-    if (!guestId) {
-      guestId = crypto.randomUUID();
-
-      localStorage.setItem("guestId", guestId);
-    }
-
+    if (!guestId) { guestId = crypto.randomUUID(); localStorage.setItem("guestId", guestId); }
     setUserId(guestId);
   }, [session]);
 
-  // Socket
-
   useEffect(() => {
     if (!userId) return;
-
     socketRef.current = io("http://localhost:3002");
-
     socketRef.current.emit("joinRoom", roomId);
-
-    return () => {
-      socketRef.current?.disconnect();
-    };
+    return () => { socketRef.current?.disconnect(); };
   }, [roomId, userId]);
 
-  // Load quiz progress
-
   useEffect(() => {
     if (!userId) return;
-
     async function loadProgress() {
       try {
-        const res = await fetch(
-          `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`,
-        );
-
+        const res = await fetch(`/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`);
         const data = await res.json();
-
         if (data?.id) {
           setCurrentQuestion(data.currentQuestion ?? 0);
-
           setAnswers(data.answers ?? Array(questions.length).fill(""));
-
           setScore(data.score ?? 0);
-
           setQuizEnded(data.quizEnded ?? false);
         }
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
+      } catch (error) { console.log(error); }
+      finally { setLoading(false); }
     }
-
     loadProgress();
   }, [userId]);
 
-  // Save quiz progress
-
   useEffect(() => {
     if (loading || !userId) return;
-
     fetch("/api/quiz-progress", {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        lobbyId: roomId,
-
-        userId,
-
-        currentQuestion,
-
-        answers,
-
-        score,
-
-        quizEnded,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lobbyId: roomId, userId, currentQuestion, answers, score, quizEnded }),
     });
   }, [currentQuestion, answers, score, quizEnded, loading, userId, roomId]);
 
-  // Timer
-
   useEffect(() => {
     if (loading || quizEnded) return;
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          moveNext();
-
-          return 30;
-        }
-
+        if (prev <= 1) { moveNext(); return 30; }
         return prev - 1;
       });
     }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [currentQuestion, quizEnded, loading]);
 
   function finishQuiz() {
     let finalScore = 0;
-
-    answers.forEach((answer, index) => {
-      if (answer === questions[index].answer) {
-        finalScore++;
-      }
-    });
-
+    answers.forEach((answer, index) => { if (answer === questions[index].answer) finalScore++; });
     setScore(finalScore);
-
     setQuizEnded(true);
   }
 
   function moveNext() {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
-
-      setTimeLeft(30);
-    } else {
-      finishQuiz();
-    }
+    if (currentQuestion < questions.length - 1) { setCurrentQuestion((p) => p + 1); setTimeLeft(30); }
+    else finishQuiz();
   }
 
   function movePrevious() {
-    if (currentQuestion > 0) {
-      setCurrentQuestion((prev) => prev - 1);
-
-      setTimeLeft(30);
-    }
+    if (currentQuestion > 0) { setCurrentQuestion((p) => p - 1); setTimeLeft(30); }
   }
 
   function submitAnswer(option: string) {
     const newAnswers = [...answers];
-
     newAnswers[currentQuestion] = option;
-
     setAnswers(newAnswers);
   }
 
+  // ── Background layers (shared) ─────────────────────────────────────────────
+  const Background = () => (
+    <>
+      <div className="fixed inset-0 pointer-events-none" style={{ backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`, backgroundSize: "48px 48px", zIndex: 0 }} />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)", zIndex: 0 }} />
+      <div className="fixed bottom-0 right-0 pointer-events-none" style={{ width: 420, height: 420, borderRadius: "50%", background: "rgba(234,120,30,.07)", filter: "blur(100px)", zIndex: 0 }} />
+      <div className="fixed left-0 right-0 pointer-events-none" style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)", animation: "qrScan 6s linear infinite", zIndex: 1 }} />
+      <div className="fixed pointer-events-none" style={{ top: "18%", left: "4%", width: 76, height: 76, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", boxShadow: "0 0 0 1px rgba(234,120,30,.3), 0 0 34px rgba(234,120,30,.18)", animation: "floatA 8s ease-in-out infinite", opacity: 0.42, zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ top: "58%", right: "4%", width: 48, height: 48, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", animation: "floatB 10s ease-in-out infinite", opacity: 0.38, zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ bottom: "18%", left: "8%", width: 26, height: 26, borderRadius: "50%", background: "#1a0a03", border: "1px solid rgba(234,120,30,.4)", animation: "floatC 6s ease-in-out infinite", opacity: 0.5, zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ top: "6%", left: "2%", width: 100, height: 100, borderRadius: "50%", border: "0.5px solid rgba(234,120,30,.14)", animation: "spinRing 22s linear infinite", zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ bottom: "8%", right: "3%", width: 64, height: 64, borderRadius: "50%", border: "0.5px solid rgba(234,120,30,.11)", animation: "spinRing 16s linear infinite reverse", zIndex: 0 }} />
+      <style>{`
+        @keyframes qrScan   { 0%{top:-2%} 100%{top:102%} }
+        @keyframes qrBlink  { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes floatA   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+        @keyframes floatB   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+        @keyframes floatC   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes spinRing { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @keyframes timerShrink { 0%{width:100%} 100%{width:0%} }
+      `}</style>
+    </>
+  );
+
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-black text-white">
-        Loading quiz...
+      <main className="relative min-h-screen flex items-center justify-center" style={{ background: "#0a0a0a" }}>
+        <Background />
+        <div className="relative" style={{ zIndex: 10, textAlign: "center" }}>
+          <div style={{ fontSize: 36, animation: "floatA 2s ease-in-out infinite" }}>⚡</div>
+          <p style={{ color: "#ea781e", fontFamily: "Georgia, serif", fontSize: 16, marginTop: 12, letterSpacing: ".08em" }}>Loading quiz…</p>
+        </div>
       </main>
     );
   }
 
+  // ── Results screen ─────────────────────────────────────────────────────────
   if (quizEnded) {
+    const pct = Math.round((score / questions.length) * 100);
     return (
-      <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8">
-            <Trophy size={60} className="mx-auto text-orange-500" />
+      <main className="relative min-h-screen overflow-x-hidden p-8" style={{ background: "#0a0a0a" }}>
+        <Background />
+        <div className="relative max-w-3xl mx-auto" style={{ zIndex: 10 }}>
 
-            <h1 className="text-center text-white text-4xl font-bold mt-4">
-              Quiz Finished 🎉
-            </h1>
-
-            <p className="text-center text-orange-500 text-3xl font-bold mt-5">
-              Score: {score}/{questions.length}
-            </p>
-
+          {/* Header */}
+          <div className="flex items-center justify-between flex-wrap gap-3 pb-6 mb-6" style={{ borderBottom: "0.5px solid rgba(234,120,30,.15)" }}>
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#ea781e", marginBottom: 4 }}>QuizRush — Results</div>
+              <h1 style={{ fontSize: "clamp(1.6rem, 4vw, 2.2rem)", fontWeight: 400, fontFamily: "Georgia, serif", color: "#f5f0e8" }}>
+                Quiz <span style={{ color: "#ea781e", fontStyle: "italic" }}>Finished</span> 🎉
+              </h1>
+            </div>
             <button
               onClick={() => router.push("/home")}
-              className="w-full mt-8 bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-white font-semibold flex items-center justify-center gap-2"
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 20px", borderRadius: 8, background: "#ea781e", border: "none", color: "#fff", fontSize: 13, fontFamily: "Georgia, serif", cursor: "pointer", transition: "background .2s, transform .15s" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#d46a15"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#ea781e"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
             >
-              <Home size={18} />
-              Back To Home
+              <Home size={14} /> Back to Home
             </button>
+          </div>
 
-            <div className="space-y-5 mt-10">
-              {questions.map((q, index) => (
-                <div
-                  key={index}
-                  className="bg-black p-5 rounded-xl border border-white/10"
-                >
-                  <p className="text-white font-medium">
-                    {index + 1}. {q.question}
-                  </p>
-
-                  <div className="space-y-2 mt-4">
-                    {q.options.map((option) => (
-                      <div
-                        key={option}
-                        className={`p-3 rounded-lg
-
-                            ${
-                              option === q.answer
-                                ? "bg-green-600"
-                                : option === answers[index] &&
-                                    answers[index] !== q.answer
-                                  ? "bg-red-600"
-                                  : "bg-white/5"
-                            }
-
-                            text-white`}
-                      >
-                        {option}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          {/* Score card */}
+          <div style={{ borderRadius: 20, background: "rgba(13,13,13,.88)", backdropFilter: "blur(20px)", border: "0.5px solid rgba(234,120,30,.2)", padding: "2.5rem 2rem", textAlign: "center", marginBottom: 24, boxShadow: "0 32px 80px rgba(0,0,0,.5)" }}>
+            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto", boxShadow: "0 0 0 1px rgba(234,120,30,.4), 0 12px 32px rgba(234,120,30,.25)", animation: "floatA 5s ease-in-out infinite" }}>
+              <Trophy size={32} color="#fff" />
             </div>
+            <p style={{ color: "#ea781e", fontSize: "clamp(2.5rem, 6vw, 3.5rem)", fontFamily: "Georgia, serif", fontWeight: 400, marginTop: 16, lineHeight: 1 }}>
+              {score}<span style={{ fontSize: "40%", color: "rgba(245,240,232,.4)" }}>/{questions.length}</span>
+            </p>
+            <p style={{ color: "rgba(245,240,232,.5)", fontSize: 14, fontFamily: "Georgia, serif", marginTop: 8 }}>
+              {pct >= 80 ? "🔥 Excellent!" : pct >= 50 ? "👍 Good effort!" : "💪 Keep practising!"}
+            </p>
+
+            {/* Score bar */}
+            <div style={{ height: 4, background: "rgba(245,240,232,.08)", borderRadius: 2, marginTop: 20, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? "#3B6D11" : pct >= 50 ? "#ea781e" : "#A32D2D", borderRadius: 2, transition: "width 1s ease" }} />
+            </div>
+            <p style={{ color: "rgba(245,240,232,.3)", fontSize: 11, marginTop: 6 }}>{pct}% correct</p>
+          </div>
+
+          {/* Answer review */}
+          <div style={{ fontSize: 10, letterSpacing: ".13em", textTransform: "uppercase", color: "#ea781e", marginBottom: 14 }}>
+            Answer Review
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {questions.map((q, index) => (
+              <div key={index} style={{ borderRadius: 14, background: "rgba(13,13,13,.88)", border: "0.5px solid rgba(234,120,30,.15)", padding: "1.25rem 1.5rem" }}>
+                <p style={{ color: "#f5f0e8", fontSize: 14, fontFamily: "Georgia, serif", marginBottom: 12 }}>
+                  <span style={{ color: "rgba(245,240,232,.35)", marginRight: 8 }}>{index + 1}.</span>
+                  {q.question}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {q.options.map((option) => {
+                    const isCorrect = option === q.answer;
+                    const isWrong = option === answers[index] && !isCorrect;
+                    return (
+                      <div key={option} style={{ padding: "9px 14px", borderRadius: 8, fontSize: 13, fontFamily: "Georgia, serif", background: isCorrect ? "rgba(59,109,17,.18)" : isWrong ? "rgba(163,45,45,.15)" : "rgba(245,240,232,.03)", border: `0.5px solid ${isCorrect ? "#3B6D11" : isWrong ? "#A32D2D" : "rgba(245,240,232,.08)"}`, color: isCorrect ? "#97C459" : isWrong ? "#F09595" : "rgba(245,240,232,.45)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        {option}
+                        {isCorrect && <span style={{ fontSize: 11 }}>✓ Correct</span>}
+                        {isWrong && <span style={{ fontSize: 11 }}>✗ Wrong</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </main>
     );
   }
 
+  // ── Active quiz screen ─────────────────────────────────────────────────────
+  const progress = ((currentQuestion) / questions.length) * 100;
+  const timerPct = (timeLeft / 30) * 100;
+  const timerDanger = timeLeft <= 8;
+
   return (
-    <main className="min-h-screen bg-[oklch(0.06_0.007_38)] p-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-8">
-          <div className="flex justify-between">
-            <h1 className="text-white text-3xl font-bold">Quiz Started 🚀</h1>
+    <main className="relative min-h-screen overflow-x-hidden p-8" style={{ background: "#0a0a0a" }}>
+      <Background />
 
-            <div className="flex items-center gap-2 text-orange-500">
-              <Clock size={18} />
-              {timeLeft}s
+      <div className="relative max-w-2xl mx-auto" style={{ zIndex: 10 }}>
+
+        {/* ── Top bar ── */}
+        <div className="flex items-center justify-between flex-wrap gap-3 pb-5 mb-6" style={{ borderBottom: "0.5px solid rgba(234,120,30,.15)" }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "#ea781e", marginBottom: 3 }}>QuizRush</div>
+            <h1 style={{ fontSize: "clamp(1.4rem, 3vw, 1.9rem)", fontWeight: 400, fontFamily: "Georgia, serif", color: "#f5f0e8" }}>
+              Quiz <span style={{ color: "#ea781e", fontStyle: "italic" }}>Started</span> 🚀
+            </h1>
+          </div>
+
+          {/* Timer badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, background: timerDanger ? "rgba(163,45,45,.15)" : "rgba(234,120,30,.1)", border: `0.5px solid ${timerDanger ? "#A32D2D" : "rgba(234,120,30,.35)"}`, borderRadius: 100, padding: "7px 16px", color: timerDanger ? "#F09595" : "#ea781e", fontSize: 14, fontFamily: "Georgia, serif", transition: "all .3s" }}>
+            <Clock size={14} />
+            <span style={{ fontVariantNumeric: "tabular-nums", minWidth: 28 }}>{timeLeft}s</span>
+          </div>
+        </div>
+
+        {/* ── Main card ── */}
+        <div style={{ borderRadius: 20, background: "rgba(13,13,13,.9)", backdropFilter: "blur(20px)", border: "0.5px solid rgba(234,120,30,.2)", padding: "2rem", boxShadow: "0 32px 80px rgba(0,0,0,.5)" }}>
+
+          {/* Progress row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <span style={{ fontSize: 11, color: "rgba(245,240,232,.4)", whiteSpace: "nowrap" }}>
+              Q {currentQuestion + 1} / {questions.length}
+            </span>
+            <div style={{ flex: 1, height: 3, background: "rgba(245,240,232,.07)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: "#ea781e", borderRadius: 2, transition: "width .4s ease" }} />
             </div>
+            <span style={{ fontSize: 11, color: "#ea781e", whiteSpace: "nowrap" }}>
+              {answers.filter(Boolean).length} answered
+            </span>
           </div>
 
-          <p className="text-neutral-400 mt-3">
-            Question {currentQuestion + 1}/{questions.length}
-          </p>
-
-          <h2 className="text-white text-xl mt-10">
-            {questions[currentQuestion].question}
-          </h2>
-
-          <div className="space-y-4 mt-6">
-            {questions[currentQuestion].options.map((option) => (
-              <button
-                key={option}
-                onClick={() => submitAnswer(option)}
-                className={`w-full p-4 rounded-xl border
-
-                    ${
-                      answers[currentQuestion] === option
-                        ? "bg-orange-500 border-orange-500"
-                        : "bg-black border-white/10 hover:border-orange-500"
-                    }
-
-                    text-white`}
-              >
-                {option}
-              </button>
-            ))}
+          {/* Timer bar */}
+          <div style={{ height: 3, background: "rgba(245,240,232,.05)", borderRadius: 2, marginBottom: 24, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${timerPct}%`, background: timerDanger ? "#A32D2D" : "#ea781e", borderRadius: 2, transition: "width 1s linear, background .3s" }} />
           </div>
 
-          <div className="flex gap-4 mt-8">
+          {/* Question */}
+          <div style={{ background: "#111", border: "0.5px solid rgba(234,120,30,.15)", borderRadius: 12, padding: "1.25rem 1.5rem", marginBottom: 20 }}>
+            <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: "#ea781e", marginBottom: 8 }}>
+              Question {currentQuestion + 1}
+            </div>
+            <p style={{ color: "#f5f0e8", fontSize: "clamp(15px, 2.5vw, 18px)", fontFamily: "Georgia, serif", lineHeight: 1.5 }}>
+              {questions[currentQuestion].question}
+            </p>
+          </div>
+
+          {/* Options */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {questions[currentQuestion].options.map((option, i) => {
+              const selected = answers[currentQuestion] === option;
+              return (
+                <button
+                  key={option}
+                  onClick={() => submitAnswer(option)}
+                  style={{
+                    width: "100%", padding: "13px 16px",
+                    borderRadius: 10, textAlign: "left",
+                    background: selected ? "rgba(234,120,30,.15)" : "#111",
+                    border: selected ? "0.5px solid rgba(234,120,30,.6)" : "0.5px solid rgba(245,240,232,.08)",
+                    color: selected ? "#f5f0e8" : "rgba(245,240,232,.65)",
+                    fontSize: 14, fontFamily: "Georgia, serif",
+                    cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 12,
+                    transition: "background .15s, border-color .15s, color .15s",
+                    boxShadow: selected ? "0 0 0 3px rgba(234,120,30,.08)" : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selected) return;
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(234,120,30,.35)";
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(234,120,30,.06)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "#f5f0e8";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selected) return;
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(245,240,232,.08)";
+                    (e.currentTarget as HTMLButtonElement).style.background = "#111";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(245,240,232,.65)";
+                  }}
+                >
+                  {/* Letter badge */}
+                  <span style={{ width: 26, height: 26, borderRadius: 6, background: selected ? "#ea781e" : "rgba(245,240,232,.06)", border: selected ? "none" : "0.5px solid rgba(245,240,232,.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: selected ? "#fff" : "rgba(245,240,232,.4)", flexShrink: 0, transition: "background .15s" }}>
+                    {["A", "B", "C", "D"][i]}
+                  </span>
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Nav buttons */}
+          <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
             <button
               onClick={movePrevious}
               disabled={currentQuestion === 0}
-              className="flex-1 border border-white/10 py-4 rounded-xl text-white disabled:opacity-50"
+              style={{ flex: 1, padding: "12px 0", borderRadius: 10, background: "transparent", border: "0.5px solid rgba(234,120,30,.2)", color: currentQuestion === 0 ? "rgba(245,240,232,.2)" : "rgba(245,240,232,.6)", fontSize: 14, fontFamily: "Georgia, serif", cursor: currentQuestion === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "border-color .2s, color .2s" }}
+              onMouseEnter={(e) => { if (currentQuestion === 0) return; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(234,120,30,.5)"; (e.currentTarget as HTMLButtonElement).style.color = "#f5f0e8"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(234,120,30,.2)"; (e.currentTarget as HTMLButtonElement).style.color = currentQuestion === 0 ? "rgba(245,240,232,.2)" : "rgba(245,240,232,.6)"; }}
             >
-              <div className="flex justify-center gap-2">
-                <ChevronLeft size={18} />
-                Previous
-              </div>
+              <ChevronLeft size={16} /> Previous
             </button>
 
             {currentQuestion === questions.length - 1 ? (
               <button
                 onClick={finishQuiz}
-                className="flex-1 bg-green-600 py-4 rounded-xl text-white"
+                style={{ flex: 1, padding: "12px 0", borderRadius: 10, background: "rgba(59,109,17,.2)", border: "0.5px solid #3B6D11", color: "#97C459", fontSize: 14, fontFamily: "Georgia, serif", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background .2s, transform .15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(59,109,17,.35)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(59,109,17,.2)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
               >
-                Submit Quiz
+                ✓ Submit Quiz
               </button>
             ) : (
               <button
                 onClick={moveNext}
-                className="flex-1 bg-orange-500 py-4 rounded-xl text-white"
+                style={{ flex: 1, padding: "12px 0", borderRadius: 10, background: "#ea781e", border: "none", color: "#fff", fontSize: 14, fontFamily: "Georgia, serif", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 6px 18px rgba(234,120,30,.22)", transition: "background .2s, transform .15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#d46a15"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#ea781e"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
               >
-                <div className="flex justify-center gap-2">
-                  Next Question
-                  <ChevronRight size={18} />
-                </div>
+                Next <ChevronRight size={16} />
               </button>
             )}
           </div>
         </div>
+
+        {/* Dot progress tracker */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 20, flexWrap: "wrap" }}>
+          {questions.map((_, i) => (
+            <div
+              key={i}
+              onClick={() => { setCurrentQuestion(i); setTimeLeft(30); }}
+              style={{ width: i === currentQuestion ? 22 : 8, height: 8, borderRadius: 4, background: answers[i] ? "#ea781e" : i === currentQuestion ? "rgba(234,120,30,.5)" : "rgba(245,240,232,.1)", cursor: "pointer", transition: "all .2s" }}
+            />
+          ))}
+        </div>
+
       </div>
     </main>
   );
