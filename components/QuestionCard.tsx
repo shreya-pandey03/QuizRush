@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useQuizStore } from "@/store/quizStore";
-import { socket } from "@/lib/socket/client";
+import { socket } from "@/lib/socket/socket";
 
 export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
   const { data: session } = useSession();

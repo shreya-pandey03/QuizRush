@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { socket } from "@/lib/socket/socket";
 
 interface Lobby {
   id: string;
@@ -15,41 +15,48 @@ export default function ActiveLobbiesPage() {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const socket: Socket = io("http://localhost:3002");
+useEffect(() => {
+   if (!socket.connected) {
+    socket.connect();
+  }
 
-    socket.on("connect", () => {
-      console.log(
-        "Connected:",
-        socket.id
-      );
-    });
 
-    socket.on(
+  const handleLobbiesUpdated = (data: Lobby[]) => {
+    setLobbies(data);
+    setLoading(false);
+  };
+
+  const handleError = (error: Error) => {
+    console.error("Socket error:", error);
+    setLoading(false);
+  };
+
+  socket.on("connect", () => {
+    console.log("Connected:", socket.id);
+  });
+
+  socket.on(
+    "activeLobbiesUpdated",
+    handleLobbiesUpdated
+  );
+
+  socket.on(
+    "connect_error",
+    handleError
+  );
+
+  return () => {
+    socket.off(
       "activeLobbiesUpdated",
-      (data: Lobby[]) => {
-        setLobbies(data);
-        setLoading(false);
-      }
+      handleLobbiesUpdated
     );
 
-    socket.on(
+    socket.off(
       "connect_error",
-      (error) => {
-        console.error(
-          "Socket error:",
-          error
-        );
-
-        setLoading(false);
-      }
+      handleError
     );
-
-    return () => {
-      socket.off("activeLobbiesUpdated");
-      socket.disconnect();
-    };
-  }, []);
+  };
+}, []);
 
   return (
     <main className="min-h-screen p-6 bg-[oklch(0.06_0.007_38)] text-white">

@@ -14,53 +14,96 @@ type JoinLobbyPayload = {
 
 export function playerHandlers(io: Server, socket: Socket) {
   socket.on("join-lobby", async (payload: JoinLobbyPayload) => {
-    const { lobbyId, player } = payload;
+    try {
+      const { lobbyId, player } = payload;
 
-    // ✅ FIX 1: guard lobbyId
-    if (!lobbyId || typeof lobbyId !== "string") return;
+      console.log("JOIN LOBBY RECEIVED");
+      console.log(lobbyId);
+      console.log(player);
 
-    let lobby = gameStore.get(lobbyId);
+      let lobby = gameStore.get(lobbyId);
 
-    // 🔥 FIX 2: handle missing lobby safely
-    if (!lobby) {
-      const dbLobby = await db.query.lobbies.findFirst({
-        where: eq(lobbies.code, lobbyId),
-      });
+      console.log("Lobby Found:", !!lobby);
 
-      if (!dbLobby) {
-        socket.emit("error", "Lobby not found");
-        return;
+      if (!lobby) {
+        console.log("Searching DB for:", lobbyId);
+
+        const dbLobby = await db.query.lobbies.findFirst({
+          where: eq(lobbies.code, lobbyId),
+        });
+
+        console.log("DB Lobby:", dbLobby);
+
+        if (!dbLobby?.code || !dbLobby?.hostId) {
+          socket.emit("error", "Lobby not found");
+          return;
+        }
+
+        lobby = {
+          id: dbLobby.code,
+          hostId: dbLobby.hostId,
+          players: [],
+          currentQuestionIndex: 0,
+          questions: [],
+          timer: 15,
+          started: false,
+        };
+
+        gameStore.set(lobbyId, lobby);
       }
 
-      lobby = {
-        id: dbLobby.code,
-        hostId: dbLobby.hostId,
-        players: [],
-        currentQuestionIndex: 0,
-        questions: [],
-        timer: 15,
-        started: false,
-      };
+      socket.join(lobbyId);
 
-      gameStore.set(lobbyId, lobby);
+      const existingPlayer = lobby.players.find((p) => p.id === player.id);
+
+      if (!existingPlayer) {
+        lobby.players.push({
+          id: player.id,
+          name: player.name,
+          score: 0,
+          answered: false,
+          socketId: socket.id,
+        });
+      }
+
+      console.log("Players:", lobby.players);
+
+      io.to(lobbyId).emit("players-update", lobby.players);
+
+      io.to(lobbyId).emit("players-update", lobby.players);
+
+      console.log("PLAYERS UPDATE EMITTED");
+    } catch (err) {
+      console.error("JOIN LOBBY ERROR:");
+      console.error(err);
     }
+  });
 
-    // 🔥 FIX 3: ensure lobby exists after creation
+socket.on(
+  "update-score",
+  ({ lobbyId, playerId, score }) => {
+    const lobby = gameStore.get(lobbyId);
+
     if (!lobby) return;
 
-    socket.join(lobbyId);
+    const player = lobby.players.find(
+      (p) => p.id === playerId
+    );
 
-    const exists = lobby.players.find((p) => p.id === player.id);
+    if (!player) return;
 
-    if (!exists) {
-      lobby.players.push({
-        id: player.id,
-        name: player.name,
-        score: 0,
-        answered: false,
-      });
-    }
+    player.score = score;
 
-    io.to(lobbyId).emit("players-update", lobby.players);
-  });
+    io.to(lobbyId).emit(
+      "players-update",
+      lobby.players
+    );
+
+    console.log(
+      "SCORE UPDATED",
+      player.name,
+      score
+    );
+  }
+);
 }

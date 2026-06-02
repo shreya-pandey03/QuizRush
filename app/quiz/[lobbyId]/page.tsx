@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
 import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
+import { socket } from "@/lib/socket/socket";
+
 
 export default function QuizPage() {
   const params = useParams();
@@ -16,7 +17,7 @@ export default function QuizPage() {
     ? params.lobbyId[0]
     : String(params.lobbyId);
 
-  const socketRef = useRef<Socket | null>(null);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const questions = [
@@ -44,12 +45,23 @@ export default function QuizPage() {
     setUserId(guestId);
   }, [session]);
 
-  useEffect(() => {
-    if (!userId) return;
-    socketRef.current = io("http://localhost:3002");
-    socketRef.current.emit("joinRoom", roomId);
-    return () => { socketRef.current?.disconnect(); };
-  }, [roomId, userId]);
+useEffect(() => {
+  if (!userId) return;
+
+  if (!socket.connected) {
+    socket.connect();
+  }
+
+
+
+
+  socket.emit("joinRoom", roomId);
+
+  return () => {
+    socket.off("quizStarted");
+    socket.off("playersUpdated");
+  };
+}, [roomId, userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -90,12 +102,25 @@ export default function QuizPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [currentQuestion, quizEnded, loading]);
 
-  function finishQuiz() {
-    let finalScore = 0;
-    answers.forEach((answer, index) => { if (answer === questions[index].answer) finalScore++; });
-    setScore(finalScore);
-    setQuizEnded(true);
-  }
+function finishQuiz() {
+  let finalScore = 0;
+
+  answers.forEach((answer, index) => {
+    if (answer === questions[index].answer) {
+      finalScore++;
+    }
+  });
+
+  setScore(finalScore);
+
+  socket.emit("update-score", {
+    lobbyId: roomId,
+    playerId: userId,
+    score: finalScore,
+  });
+
+  setQuizEnded(true);
+}
 
   function moveNext() {
     if (currentQuestion < questions.length - 1) { setCurrentQuestion((p) => p + 1); setTimeLeft(30); }

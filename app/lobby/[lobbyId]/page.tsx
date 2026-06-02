@@ -3,12 +3,14 @@
 import { useParams, useRouter } from "next/navigation";
 import { Users, Copy, Play, Check, Crown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
 import QuizLobbyClient from "./QuizLobbyClient";
+import { socket } from "@/lib/socket/socket";
+
+
 
 export default function LobbyRoomPage() {
   const params = useParams();
- 
+
   const router = useRouter();
 
   const [copied, setCopied] = useState(false);
@@ -19,7 +21,7 @@ export default function LobbyRoomPage() {
     }[]
   >([]);
   const [quizStarted, setQuizStarted] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  
 
   const lobbyId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
@@ -38,43 +40,52 @@ export default function LobbyRoomPage() {
   }, []);
 
   // Socket connection
-  useEffect(() => {
-    if (!lobbyId) return;
+useEffect(() => {
+  if (!lobbyId) return;
 
-    // Create guest ID
+  let guestId = localStorage.getItem("guestId");
 
-    let guestId = localStorage.getItem("guestId");
+  if (!guestId) {
+    guestId = crypto.randomUUID();
+    localStorage.setItem("guestId", guestId);
+  }
 
-    if (!guestId) {
-      guestId = crypto.randomUUID();
+   if (!socket.connected) {
+    socket.connect();
+  }
 
-      localStorage.setItem("guestId", guestId);
-    }
 
-    socketRef.current = io("http://localhost:3002");
+  const user = {
+    id: guestId,
+    name: guestId.slice(0, 6),
+  };
 
-    const socket = socketRef.current;
+  socket.emit("joinRoomWithUser", {
+    roomId: lobbyId,
+    user,
+  });
 
-    const user = {
-      id: guestId,
+  const handlePlayersUpdated = (
+    updatedPlayers: {
+      id: string;
+      name: string;
+    }[]
+  ) => {
+    setPlayers(updatedPlayers);
+  };
 
-      name: guestId.slice(0, 6),
-    };
+  socket.on(
+    "playersUpdated",
+    handlePlayersUpdated
+  );
 
-    socket.emit("joinRoomWithUser", {
-      roomId: lobbyId,
-
-      user,
-    });
-
-    socket.on("playersUpdated", (updatedPlayers) => {
-      setPlayers(updatedPlayers);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [lobbyId]);
+  return () => {
+    socket.off(
+      "playersUpdated",
+      handlePlayersUpdated
+    );
+  };
+}, [lobbyId]);
 
   // Copy lobby ID
   async function copyRoomId() {
@@ -94,9 +105,9 @@ export default function LobbyRoomPage() {
     setQuizStarted(true);
 
     // Emit to server (notify other players)
-    if (socketRef.current && lobbyId) {
-      socketRef.current.emit("startQuiz", lobbyId);
-    }
+if (lobbyId) {
+  socket.emit("startQuiz", lobbyId);
+}
 
     // Redirect immediately — don't wait for socket response
     router.push(`/quiz/${lobbyId}`);
@@ -331,8 +342,6 @@ export default function LobbyRoomPage() {
             />
             {players.length} online
           </div>
-
-          
         </div>
 
         {/* ── Main card ── */}

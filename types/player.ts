@@ -3,4 +3,5 @@ export type Player = {
   name: string;
   score: number;
   answered: boolean;
+  socketId: string;
 };

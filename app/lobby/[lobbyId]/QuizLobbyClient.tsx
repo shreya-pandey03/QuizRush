@@ -17,14 +17,18 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
 
   const userId = session?.user?.email ?? "";
 
-  console.log("Session:", session);
-  console.log("User ID:", (session?.user as { id?: string })?.id);
+  // console.log("Session:", session);
+  // console.log("User ID:", userId);
+  console.log("User Email:", session?.user?.email);
+
   // Connect socket only when both values exist
   useSocket({
     lobbyId,
-    userId,
-    playerName: session?.user?.name ?? "Player",
+    userId: status === "authenticated" ? userId : "",
+    playerName:
+      status === "authenticated" ? (session?.user?.name ?? "Player") : "",
   });
+
   console.log("Lobby ID:", lobbyId);
   if (status === "loading") {
     return <div className="p-6 text-white">Loading...</div>;
