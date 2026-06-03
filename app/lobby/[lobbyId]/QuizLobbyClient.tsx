@@ -17,9 +17,8 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
 
   const userId = session?.user?.email ?? "";
 
-  // console.log("Session:", session);
-  // console.log("User ID:", userId);
-  console.log("User Email:", session?.user?.email);
+  console.log("FULL SESSION");
+  console.log(JSON.stringify(session, null, 2));
 
   // Connect socket only when both values exist
   useSocket({

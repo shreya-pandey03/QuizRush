@@ -79,31 +79,33 @@ export function playerHandlers(io: Server, socket: Socket) {
     }
   });
 
-socket.on(
-  "update-score",
-  ({ lobbyId, playerId, score }) => {
+  socket.on("update-score", ({ lobbyId, playerId, score }) => {
+    console.log("UPDATE SCORE RECEIVED", lobbyId, playerId, score);
+
     const lobby = gameStore.get(lobbyId);
 
-    if (!lobby) return;
+    console.log("ALL LOBBIES:");
+    console.log([...gameStore.keys()]);
 
-    const player = lobby.players.find(
-      (p) => p.id === playerId
-    );
+    console.log("REQUESTED LOBBY:");
+    console.log(lobbyId);
 
-    if (!player) return;
+    if (!lobby) {
+      console.log("LOBBY NOT FOUND");
+      return;
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+
+    if (!player) {
+      console.log("PLAYER NOT FOUND");
+      return;
+    }
 
     player.score = score;
 
-    io.to(lobbyId).emit(
-      "players-update",
-      lobby.players
-    );
+    console.log("PLAYER SCORE UPDATED", player.name, player.score);
 
-    console.log(
-      "SCORE UPDATED",
-      player.name,
-      score
-    );
-  }
-);
+    io.to(lobbyId).emit("players-update", lobby.players);
+  });
 }

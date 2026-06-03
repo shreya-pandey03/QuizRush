@@ -1,25 +1,16 @@
-export type Player = {
-  id: string;
-  name: string;
-  score: number;
-  answered: boolean;
-};
+import { Lobby } from "@/types/lobby";
 
-export type Lobby = {
-  id: string;
+export function finishQuiz(lobby: Lobby, userId: string, score: number) {
+  const player = lobby.players.find((p) => p.id === userId);
 
-  hostId: string;
+  if (!player) {
+    return null;
+  }
 
-  players: Player[];
+  player.score = score;
 
-  currentQuestionIndex: number;
-
-  questions: any[];
-
-  timer: number;
-
-  started: boolean;
-};
-
-export const gameStore =
-  new Map<string, Lobby>();
+  return {
+    player,
+    players: lobby.players,
+  };
+}

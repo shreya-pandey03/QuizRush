@@ -25,6 +25,7 @@ export default function PlayersList() {
           {sortedPlayers.map((player, _index) => {
             console.log("RENDERING PLAYER:", player);
             console.log(player);
+
             return (
               <div
                 key={player.id}

@@ -45,6 +45,10 @@ export default function useSocket({
       console.log("CONNECT ERROR", err);
     });
 
+
+    console.log("JOIN USER ID:", userId);
+console.log("PLAYER NAME:", playerName);
+
     socket.emit("join-lobby", {
       lobbyId,
       player: {
@@ -62,7 +66,11 @@ export default function useSocket({
       console.count("PLAYERS_UPDATE_EVENT");
       setPlayers(players);
     };
-    socket.on("players-update", handlePlayersUpdate);
+    socket.on("players-update", (players) => {
+      setPlayers(players);
+
+      setLeaderboard(players);
+    });
     socket.on("timer-update", setTimeLeft);
     socket.on("quiz-started", setQuestion);
     socket.on("next-question", setQuestion);
