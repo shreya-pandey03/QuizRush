@@ -17,22 +17,22 @@ export function playerHandlers(io: Server, socket: Socket) {
     try {
       const { lobbyId, player } = payload;
 
-      console.log("JOIN LOBBY RECEIVED");
-      console.log(lobbyId);
-      console.log(player);
+      // console.log("JOIN LOBBY RECEIVED");
+      // console.log(lobbyId);
+      // console.log(player);
 
       let lobby = gameStore.get(lobbyId);
 
-      console.log("Lobby Found:", !!lobby);
+      // console.log("Lobby Found:", !!lobby);
 
       if (!lobby) {
-        console.log("Searching DB for:", lobbyId);
+        // console.log("Searching DB for:", lobbyId);
 
         const dbLobby = await db.query.lobbies.findFirst({
           where: eq(lobbies.code, lobbyId),
         });
 
-        console.log("DB Lobby:", dbLobby);
+        // console.log("DB Lobby:", dbLobby);
 
         if (!dbLobby?.code || !dbLobby?.hostId) {
           socket.emit("error", "Lobby not found");
@@ -55,6 +55,14 @@ export function playerHandlers(io: Server, socket: Socket) {
       socket.join(lobbyId);
 
       const existingPlayer = lobby.players.find((p) => p.id === player.id);
+      console.log("EXISTING PLAYER:", existingPlayer);
+     
+      console.log("NEW SOCKET:", socket.id);
+
+      if (existingPlayer) {
+        existingPlayer.socketId = socket.id;
+        existingPlayer.name = player.name;
+      }
 
       if (!existingPlayer) {
         lobby.players.push({
@@ -65,10 +73,8 @@ export function playerHandlers(io: Server, socket: Socket) {
           socketId: socket.id,
         });
       }
-
-      console.log("Players:", lobby.players);
-
-      io.to(lobbyId).emit("players-update", lobby.players);
+      console.log("PLAYERS AFTER JOIN:");
+      console.log(lobby.players);
 
       io.to(lobbyId).emit("players-update", lobby.players);
 

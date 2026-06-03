@@ -15,10 +15,13 @@ interface Props {
 export default function QuizLobbyClient({ lobbyId }: Props) {
   const { data: session, status } = useSession();
 
-  const userId = session?.user?.email ?? "";
+  // console.log("EMAIL RAW:", session?.user?.email);
+  // console.log("EMAIL LENGTH:", session?.user?.email?.length);
+  // console.log("EMAIL JSON:", JSON.stringify(session?.user?.email));
+  // console.log(session?.user?.email?.split(""));
+  // console.log([...(session?.user?.email ?? "")]);
 
-  console.log("FULL SESSION");
-  console.log(JSON.stringify(session, null, 2));
+  const userId = session?.user?.email ?? "";
 
   // Connect socket only when both values exist
   useSocket({
