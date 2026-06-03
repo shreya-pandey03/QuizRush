@@ -168,7 +168,7 @@ export default function QuizPage() {
       score: finalScore,
     });
 
-console.log("EMITTING SCORE", finalScore);
+    console.log("EMITTING SCORE", finalScore);
     setQuizEnded(true);
   }
 

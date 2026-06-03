@@ -56,7 +56,7 @@ export function playerHandlers(io: Server, socket: Socket) {
 
       const existingPlayer = lobby.players.find((p) => p.id === player.id);
       console.log("EXISTING PLAYER:", existingPlayer);
-     
+
       console.log("NEW SOCKET:", socket.id);
 
       if (existingPlayer) {
@@ -86,15 +86,19 @@ export function playerHandlers(io: Server, socket: Socket) {
   });
 
   socket.on("update-score", ({ lobbyId, playerId, score }) => {
-    console.log("UPDATE SCORE RECEIVED", lobbyId, playerId, score);
+    console.log("UPDATE SCORE");
 
     const lobby = gameStore.get(lobbyId);
+    console.log("PLAYER ID RECEIVED:", playerId);
+    console.log(
+      "PLAYERS:",
+      lobby?.players.map((p) => p.id),
+    );
+    // console.log("ALL LOBBIES:");
+    // console.log([...gameStore.keys()]);
 
-    console.log("ALL LOBBIES:");
-    console.log([...gameStore.keys()]);
-
-    console.log("REQUESTED LOBBY:");
-    console.log(lobbyId);
+    // console.log("REQUESTED LOBBY:");
+    // console.log(lobbyId);
 
     if (!lobby) {
       console.log("LOBBY NOT FOUND");

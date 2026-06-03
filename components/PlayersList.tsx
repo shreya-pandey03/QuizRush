@@ -10,6 +10,14 @@ export default function PlayersList() {
   console.log("Players Store:", players);
   console.log("PLAYERS COUNT:", players.length, players);
 
+  console.log(
+    "PLAYER SCORES:",
+    players.map((p) => ({
+      name: p.name,
+      score: p.score,
+    })),
+  );
+
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-5 shadow-lg">
       <div className="mb-4">
@@ -24,7 +32,8 @@ export default function PlayersList() {
         <div className="space-y-3">
           {sortedPlayers.map((player, _index) => {
             console.log("RENDERING PLAYER:", player);
-            console.log(player);
+            // console.log(player);
+            console.log(JSON.stringify(players, null, 2));
 
             return (
               <div
