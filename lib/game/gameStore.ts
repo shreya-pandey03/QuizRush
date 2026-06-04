@@ -1,11 +1,15 @@
 import { Lobby } from "@/types/lobby";
 
-export function finishQuiz(lobby: Lobby, userId: string, score: number) {
-  const player = lobby.players.find((p) => p.id === userId);
+export const gameStore = new Map<string, Lobby>();
 
-  if (!player) {
-    return null;
-  }
+export function finishQuiz(lobbyId: string, userId: string, score: number) {
+  const lobby = gameStore.get(lobbyId);
+
+  if (!lobby) return null;
+
+  const player = lobby.players.find((p: { id: string; }) => p.id === userId);
+
+  if (!player) return null;
 
   player.score = score;
 
@@ -14,3 +18,5 @@ export function finishQuiz(lobby: Lobby, userId: string, score: number) {
     players: lobby.players,
   };
 }
+
+

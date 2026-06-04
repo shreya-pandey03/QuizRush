@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { timers } from "./timers";
-import { gameStore } from "./gameStore";
+import  {gameStore } from "./gameStore";
 
 export function startGame(io: Server, lobbyId: string) {
   const lobby = gameStore.get(lobbyId);

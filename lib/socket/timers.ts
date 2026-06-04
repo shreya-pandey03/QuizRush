@@ -16,6 +16,8 @@ export function startTimer(io: Server, lobbyId: string) {
 
     io.to(lobbyId).emit("timer-update", lobby.timer);
 
+    
+
     if (lobby.timer <= 0) {
       clearInterval(interval);
 

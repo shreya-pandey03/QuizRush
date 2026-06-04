@@ -2,6 +2,7 @@ import { Player } from "./player";
 import { Question } from "./question";
 
 export type Lobby = {
+  status: string;
   id: string;
   hostId: string;
 

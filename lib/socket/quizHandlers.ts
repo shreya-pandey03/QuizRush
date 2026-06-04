@@ -1,49 +1,48 @@
 import { Server, Socket } from "socket.io";
 import { gameStore } from "./gameStore";
 import { startTimer } from "./timers";
-import { Question } from "../../types/question";
+import { generateQuestions } from "@/lib/ai/generateQuestions";
+import { db } from "@/drizzle/src/db";
+import { questions } from "@/drizzle/src/db/schema";
 
 export function quizHandlers(io: Server, socket: Socket) {
   socket.on("start-quiz", async ({ lobbyId }) => {
-    console.log("START QUIZ RECEIVED", lobbyId);
-
     const lobby = gameStore.get(lobbyId);
 
-    if (!lobby) {
-      console.log("LOBBY NOT FOUND");
-      return;
-    }
+    if (!lobby) return;
 
     if (lobby.questions.length === 0) {
-      lobby.questions = await generateQuestions();
+      const generatedQuestions = await generateQuestions(
+        "Science",
+        "Medium",
+        10,
+      );
+
+      lobby.questions = generatedQuestions;
+
+      await db.insert(questions).values(
+        generatedQuestions.map(
+          (q: { question: any; options: any[]; answer: any }) => ({
+            question: q.question,
+            optionA: q.options[0],
+            optionB: q.options[1],
+            optionC: q.options[2],
+            optionD: q.options[3],
+            answer: q.answer,
+          }),
+        ),
+      );
     }
 
     lobby.started = true;
 
-    io.to(lobbyId).emit("quiz-started", lobby.questions[0]);
+    const firstQuestion = lobby.questions[0];
+
+    io.to(lobbyId).emit("quiz-started", {
+      question: firstQuestion.question,
+      options: firstQuestion.options,
+    });
 
     startTimer(io, lobbyId);
-
-    console.log("QUIZ STARTED");
   });
-}
-
-async function generateQuestions(): Promise<Question[]> {
-  return [
-    {
-      question: "What is the capital of India?",
-      options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
-      answer: "Delhi",
-    },
-    {
-      question: "2 + 2 = ?",
-      options: ["2", "4", "8", "10"],
-      answer: "4",
-    },
-    {
-      question: "Largest planet?",
-      options: ["Earth", "Mars", "Jupiter", "Venus"],
-      answer: "Jupiter",
-    },
-  ];
 }
