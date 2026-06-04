@@ -17,37 +17,17 @@ export default function useSocket({
   userId,
   playerName,
 }: SocketProps) {
-  console.log({ lobbyId, userId, playerName });
+useEffect(() => {
+  if (!lobbyId || !userId) return;
 
-  useEffect(() => {
-    console.log("SOCKET EFFECT FIRED");
+  const setPlayers = useLobbyStore.getState().setPlayers;
+  const setTimeLeft = useTimerStore.getState().setTimeLeft;
+  const setQuestion = useQuizStore.getState().setQuestion;
+  const setLeaderboard = useLeaderboardStore.getState().setLeaderboard;
 
-    if (!lobbyId || !userId?.trim()) return;
+  socket.connect();
 
-    const { setPlayers } = useLobbyStore.getState();
-    const { setTimeLeft } = useTimerStore.getState();
-    const { setQuestion } = useQuizStore.getState();
-    const { setLeaderboard } = useLeaderboardStore.getState();
-
-    if (!socket.connected) {
-      socket.connect();
-    }
-
-    socket.on("connect", () => {
-      console.log("SOCKET CONNECTED", socket.id);
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log("SOCKET DISCONNECTED", reason);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.log("CONNECT ERROR", err);
-    });
-
-    console.log("JOIN USER ID:", userId);
-    console.log("PLAYER NAME:", playerName);
-
+  socket.on("connect", () => {
     socket.emit("join-lobby", {
       lobbyId,
       player: {
@@ -55,38 +35,20 @@ export default function useSocket({
         name: playerName ?? "Player",
       },
     });
+  });
 
-    // const handlePlayersUpdate = (players: any) => {
-    //   console.log("PLAYERS UPDATE RECEIVED", players);
-    //   setPlayers(players);
-    // };
+  socket.on("players-update", (players) => {
+    setPlayers(players);
+    setLeaderboard(players);
+  });
 
-    const handlePlayersUpdate = (players: any) => {
-      console.count("PLAYERS_UPDATE_EVENT");
-      setPlayers(players);
-    };
+  socket.on("timer-update", setTimeLeft);
+  socket.on("quiz-started", setQuestion);
+  socket.on("next-question", setQuestion);
+  socket.on("leaderboard-update", setLeaderboard);
 
-    socket.on("players-update", (players) => {
-      console.log("PLAYERS UPDATE RECEIVED");
-      console.log(JSON.stringify(players, null, 2));
-
-      setPlayers(players);
-      setLeaderboard(players);
-    });
-
-    socket.on("timer-update", setTimeLeft);
-    socket.on("quiz-started", setQuestion);
-    socket.on("next-question", setQuestion);
-    socket.on("leaderboard-update", setLeaderboard);
-
-    return () => {
-      console.log("SOCKET EFFECT CLEANUP");
-
-      socket.off("players-update", handlePlayersUpdate);
-      socket.off("timer-update", setTimeLeft);
-      socket.off("quiz-started", setQuestion);
-      socket.off("next-question", setQuestion);
-      socket.off("leaderboard-update", setLeaderboard);
-    };
-  }, [lobbyId, userId, playerName]);
+  return () => {
+    socket.disconnect();
+  };
+}, [lobbyId, userId, playerName]);
 }

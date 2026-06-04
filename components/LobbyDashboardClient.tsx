@@ -38,13 +38,11 @@ export default function LobbyDashboardClient({
 
       {/* Players */}
       <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-        <PlayersList lobbyId={lobbyId} />
+        <PlayersList  />
       </div>
 
       {/* Timer */}
-      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
-        <QuizTimer/>
-      </div>
+
 
     </div>
   );

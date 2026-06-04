@@ -17,22 +17,12 @@ export function playerHandlers(io: Server, socket: Socket) {
     try {
       const { lobbyId, player } = payload;
 
-      // console.log("JOIN LOBBY RECEIVED");
-      // console.log(lobbyId);
-      // console.log(player);
-
       let lobby = gameStore.get(lobbyId);
 
-      // console.log("Lobby Found:", !!lobby);
-
       if (!lobby) {
-        // console.log("Searching DB for:", lobbyId);
-
         const dbLobby = await db.query.lobbies.findFirst({
           where: eq(lobbies.code, lobbyId),
         });
-
-        // console.log("DB Lobby:", dbLobby);
 
         if (!dbLobby?.code || !dbLobby?.hostId) {
           socket.emit("error", "Lobby not found");
@@ -54,17 +44,17 @@ export function playerHandlers(io: Server, socket: Socket) {
 
       socket.join(lobbyId);
 
-      const existingPlayer = lobby.players.find((p) => p.id === player.id);
-      console.log("EXISTING PLAYER:", existingPlayer);
+      const index = lobby.players.findIndex((p) => p.id === player.id);
 
-      console.log("NEW SOCKET:", socket.id);
-
-      if (existingPlayer) {
-        existingPlayer.socketId = socket.id;
-        existingPlayer.name = player.name;
-      }
-
-      if (!existingPlayer) {
+      if (index !== -1) {
+        // update existing player (refresh / reconnect case)
+        lobby.players[index] = {
+          ...lobby.players[index],
+          name: player.name,
+          socketId: socket.id,
+        };
+      } else {
+        // new player join
         lobby.players.push({
           id: player.id,
           name: player.name,
@@ -73,49 +63,50 @@ export function playerHandlers(io: Server, socket: Socket) {
           socketId: socket.id,
         });
       }
-      console.log("PLAYERS AFTER JOIN:");
-      console.log(lobby.players);
 
       io.to(lobbyId).emit("players-update", lobby.players);
-
-      console.log("PLAYERS UPDATE EMITTED");
     } catch (err) {
-      console.error("JOIN LOBBY ERROR:");
-      console.error(err);
+      console.error("JOIN LOBBY ERROR:", err);
     }
   });
 
-  socket.on("update-score", ({ lobbyId, playerId, score }) => {
-    console.log("UPDATE SCORE");
+  socket.on(
+    "update-score",
+    ({
+      lobbyId,
+      playerId,
+      score,
+    }: {
+      lobbyId: string;
+      playerId: string;
+      score: number;
+    }) => {
+      const lobby = gameStore.get(lobbyId);
 
-    const lobby = gameStore.get(lobbyId);
-    console.log("PLAYER ID RECEIVED:", playerId);
-    console.log(
-      "PLAYERS:",
-      lobby?.players.map((p) => p.id),
-    );
-    // console.log("ALL LOBBIES:");
-    // console.log([...gameStore.keys()]);
+      if (!lobby) return;
 
-    // console.log("REQUESTED LOBBY:");
-    // console.log(lobbyId);
+      const player = lobby.players.find((p) => p.id === playerId);
 
-    if (!lobby) {
-      console.log("LOBBY NOT FOUND");
-      return;
-    }
+      if (!player) return;
 
-    const player = lobby.players.find((p) => p.id === playerId);
+      player.score = score;
 
-    if (!player) {
-      console.log("PLAYER NOT FOUND");
-      return;
-    }
+      io.to(lobbyId).emit("players-update", lobby.players);
+    },
+  );
 
-    player.score = score;
+socket.on("disconnect", () => {
+  const lobbyId = socket.data.lobbyId;
 
-    console.log("PLAYER SCORE UPDATED", player.name, player.score);
+  if (!lobbyId) return;
 
-    io.to(lobbyId).emit("players-update", lobby.players);
-  });
+  const lobby = gameStore.get(lobbyId);
+  if (!lobby) return;
+
+  lobby.players = lobby.players.filter(
+    (p) => p.socketId !== socket.id
+  );
+
+  io.to(lobbyId).emit("players-update", lobby.players);
+});
 }

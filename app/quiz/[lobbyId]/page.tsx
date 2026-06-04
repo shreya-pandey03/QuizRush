@@ -67,110 +67,135 @@ export default function QuizPage() {
   const [quizEnded, setQuizEnded] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (session?.user?.email) {
-      setUserId(session.user.email);
-      return;
-    }
-    let guestId = localStorage.getItem("guestId");
-    if (!guestId) {
-      guestId = crypto.randomUUID();
-      localStorage.setItem("guestId", guestId);
-    }
-    setUserId(guestId);
-  }, [session]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    if (!socket.connected) {
-      socket.connect();
-    }
-
-    socket.emit("joinRoom", roomId);
-
-    return () => {
-      socket.off("quizStarted");
-      socket.off("playersUpdated");
-    };
-  }, [roomId, userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-    async function loadProgress() {
-      try {
-        const res = await fetch(
-          `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`,
-        );
-        const data = await res.json();
-        if (data?.id) {
-          setCurrentQuestion(data.currentQuestion ?? 0);
-          setAnswers(data.answers ?? Array(questions.length).fill(""));
-          setScore(data.score ?? 0);
-          setQuizEnded(data.quizEnded ?? false);
-        }
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadProgress();
-  }, [userId]);
-
-  useEffect(() => {
-    if (loading || !userId) return;
-    fetch("/api/quiz-progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lobbyId: roomId,
-        userId,
-        currentQuestion,
-        answers,
-        score,
-        quizEnded,
-      }),
-    });
-  }, [currentQuestion, answers, score, quizEnded, loading, userId, roomId]);
-
-  useEffect(() => {
-    if (loading || quizEnded) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          moveNext();
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [currentQuestion, quizEnded, loading]);
-
-  function finishQuiz() {
-    let finalScore = 0;
-
-    answers.forEach((answer, index) => {
-      if (answer === questions[index].answer) {
-        finalScore++;
-      }
-    });
-
-    setScore(finalScore);
-
-    socket.emit("update-score", {
-      lobbyId: roomId,
-      playerId: userId,
-      score: finalScore,
-    });
-
-    console.log("EMITTING SCORE", finalScore);
-    setQuizEnded(true);
+useEffect(() => {
+  if (session?.user?.email) {
+    setUserId(session.user.email);
+    return;
   }
+
+  let guestId = localStorage.getItem("guestId");
+
+  if (!guestId) {
+    guestId = crypto.randomUUID();
+    localStorage.setItem("guestId", guestId);
+  }
+
+  setUserId(guestId);
+}, [session]);
+
+useEffect(() => {
+  if (!userId) return;
+
+  if (!socket.connected) {
+    socket.connect();
+  }
+
+  socket.emit("joinRoom", roomId);
+
+  return () => {
+    socket.off("quizStarted");
+    socket.off("playersUpdated");
+  };
+}, [roomId, userId]);
+
+useEffect(() => {
+  if (!userId) return;
+
+  async function loadProgress() {
+    try {
+      const res = await fetch(
+        `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`
+      );
+
+      const data = await res.json();
+
+      if (data?.id) {
+        setCurrentQuestion(data.currentQuestion ?? 0);
+        setAnswers(data.answers ?? Array(questions.length).fill(""));
+        setScore(data.score ?? 0);
+        setQuizEnded(data.quizEnded ?? false);
+      }
+    } catch {
+      // Optional: show toast here later
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadProgress();
+}, [userId, roomId, questions.length]);
+
+useEffect(() => {
+  if (loading || !userId) return;
+
+  fetch("/api/quiz-progress", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      lobbyId: roomId,
+      userId,
+      currentQuestion,
+      answers,
+      score,
+      quizEnded,
+    }),
+  });
+}, [
+  currentQuestion,
+  answers,
+  score,
+  quizEnded,
+  loading,
+  userId,
+  roomId,
+]);
+
+useEffect(() => {
+  if (loading || quizEnded) return;
+
+  if (timerRef.current) {
+    clearInterval(timerRef.current);
+  }
+
+  timerRef.current = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        moveNext();
+        return 30;
+      }
+
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  };
+}, [currentQuestion, quizEnded, loading]);
+
+function finishQuiz() {
+  let finalScore = 0;
+
+  answers.forEach((answer, index) => {
+    if (answer === questions[index].answer) {
+      finalScore++;
+    }
+  });
+
+  setScore(finalScore);
+
+  socket.emit("update-score", {
+    lobbyId: roomId,
+    playerId: userId,
+    score: finalScore,
+  });
+
+  setQuizEnded(true);
+}
 
   function moveNext() {
     if (currentQuestion < questions.length - 1) {

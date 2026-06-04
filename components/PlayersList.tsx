@@ -5,24 +5,15 @@ import { useLobbyStore } from "@/store/lobbyStore";
 export default function PlayersList() {
   const players = useLobbyStore((s) => s.players);
 
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-  console.log(sortedPlayers);
-  console.log("Players Store:", players);
-  console.log("PLAYERS COUNT:", players.length, players);
-
-  console.log(
-    "PLAYER SCORES:",
-    players.map((p) => ({
-      name: p.name,
-      score: p.score,
-    })),
+  const sortedPlayers = [...players].sort(
+    (a, b) => b.score - a.score
   );
 
   return (
-    <div className="rounded-2xl border border-neutral-800 bg-neutral-900/70 p-5 shadow-lg">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold text-white">👥 Online Players</h2>
-      </div>
+    <div>
+      <h2 className="mb-4 text-lg font-semibold text-white">
+        👥 Online Players
+      </h2>
 
       {sortedPlayers.length === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-700 p-4 text-center text-neutral-400">
@@ -30,25 +21,18 @@ export default function PlayersList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedPlayers.map((player, _index) => {
-            console.log("RENDERING PLAYER:", player);
-            // console.log(player);
-            console.log(JSON.stringify(players, null, 2));
+          {sortedPlayers.map((player) => (
+            <div
+              key={player.id}
+              className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950 px-4 py-3"
+            >
+              <p className="text-white">{player.name}</p>
 
-            return (
-              <div
-                key={player.id}
-                className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950 px-4 py-3"
-              >
-                <div>
-                  <p className="text-white">{player.name}</p>
-                </div>
-                <div>
-                  <p className="text-green-400 font-bold">{player.score}</p>
-                </div>
-              </div>
-            );
-          })}
+              <p className="font-bold text-green-400">
+                {player.score}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>
