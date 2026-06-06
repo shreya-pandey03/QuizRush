@@ -6,54 +6,51 @@ import { db } from "@/drizzle/src/db";
 import { questions } from "@/drizzle/src/db/schema";
 
 export function quizHandlers(io: Server, socket: Socket) {
-  socket.on("start-quiz", async ({ lobbyId }) => {
-    console.log("START QUIZ RECEIVED:", lobbyId);
+socket.on("start-quiz", async ({ lobbyId }) => {
+  console.log("START QUIZ RECEIVED:", lobbyId);
 
-    const lobby = gameStore.get(lobbyId);
+  const lobby = gameStore.get(lobbyId);
 
-    console.log("LOBBY FOUND:", !!lobby);
+  if (!lobby) return;
 
-    if (!lobby) return;
+  console.log("LOBBY FOUND:", !!lobby);
 
-    if (lobby.questions.length === 0) {
-      const generatedQuestions = await generateQuestions(
-        "Science",
-        "Medium",
-        10,
-      );
+  // prevent double start
+  if (lobby.started) {
+    io.to(lobbyId).emit("quiz-started", lobby.questions);
+    return;
+  }
 
-      lobby.questions = generatedQuestions;
+  if (!lobby.questions || lobby.questions.length === 0) {
+    const seed = Date.now() + Math.random();
 
-      console.log(generatedQuestions);
+    const generatedQuestions = await generateQuestions(
+      lobby.category,
+      lobby.difficulty,
+      10,
+      seed
+    );
 
-await db.insert(questions).values(
-  generatedQuestions.map((q: { question: any; options: any[]; answer: any; }, index: number) => ({
-    lobbyId,
+    lobby.questions = generatedQuestions;
 
-    questionNumber: index + 1,
+    await db.insert(questions).values(
+      generatedQuestions.map((q: { question: any; options: any[]; answer: any; }, index: number) => ({
+        lobbyId,
+        questionNumber: index + 1,
+        question: q.question,
+        optionA: q.options[0],
+        optionB: q.options[1],
+        optionC: q.options[2],
+        optionD: q.options[3],
+        answer: q.answer,
+      }))
+    );
+  }
 
-    question: q.question,
+  lobby.started = true;
 
-    optionA: q.options[0],
-    optionB: q.options[1],
-    optionC: q.options[2],
-    optionD: q.options[3],
+  io.to(lobbyId).emit("quiz-started", lobby.questions);
 
-    answer: q.answer,
-  }))
-);
-    }
-
-    lobby.started = true;
-
-
-
-
-io.to(lobbyId).emit(
-  "quiz-started",
-  lobby.questions
-);
-
-    startTimer(io, lobbyId);
-  });
+  startTimer(io, lobbyId);
+});
 }

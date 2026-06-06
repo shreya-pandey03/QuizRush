@@ -5,10 +5,7 @@ const ai = new GoogleGenAI({
 });
 
 export async function generateQuestions(
-  category: string,
-  difficulty: string,
-  count = 10
-) {
+category: string, difficulty: string, count = 10, seed: number) {
   const prompt = `
 Generate ${count} multiple choice questions.
 
@@ -17,16 +14,13 @@ Difficulty: ${difficulty}
 
 Return ONLY valid JSON.
 
-[
- {
-  "question":"...",
-  "optionA":"...",
-  "optionB":"...",
-  "optionC":"...",
-  "optionD":"...",
-  "answer":"..."
- }
-]
+Each question MUST have:
+- question
+- optionA
+- optionB
+- optionC
+- optionD
+- answer (must be ONE OF: optionA | optionB | optionC | optionD)
 `;
 
   const response = await ai.models.generateContent({
