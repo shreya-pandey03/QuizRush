@@ -48,7 +48,7 @@ export const lobbyPlayers = pgTable("lobby_players", {
 export const questions = pgTable("questions", {
   id: uuid("id").defaultRandom().primaryKey(),
 
-  lobbyId: uuid("lobby_id").notNull(),
+lobbyId: text("lobby_id").notNull(),
 
   questionNumber: integer("question_number").notNull(),
 
@@ -89,3 +89,19 @@ export const quizProgress = pgTable("quiz_progress", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const lobbyQuestions = pgTable("lobby_questions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  lobbyId: text("lobby_id").notNull(),
+
+  questionNumber: integer("question_number").notNull(),
+
+  question: text("question").notNull(),
+
+  optionA: text("optionA").notNull(),
+  optionB: text("optionB").notNull(),
+  optionC: text("optionC").notNull(),
+  optionD: text("optionD").notNull(),
+
+  answer: text("answer").notNull(),
+});

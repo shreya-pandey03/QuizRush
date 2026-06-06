@@ -1,0 +1,1 @@
+ALTER TABLE "questions" ALTER COLUMN "lobby_id" SET DATA TYPE text;

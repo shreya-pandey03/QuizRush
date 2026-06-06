@@ -14,6 +14,8 @@ type JoinLobbyPayload = {
 
 export function playerHandlers(io: Server, socket: Socket) {
   socket.on("join-lobby", async (payload: JoinLobbyPayload) => {
+    console.log("USER JOINED ROOM:", socket.id, payload.lobbyId);
+
     try {
       const { lobbyId, player } = payload;
 
@@ -30,6 +32,7 @@ export function playerHandlers(io: Server, socket: Socket) {
         }
 
         lobby = {
+          status: "waiting",
           id: dbLobby.code,
           hostId: dbLobby.hostId,
           players: [],
@@ -95,18 +98,16 @@ export function playerHandlers(io: Server, socket: Socket) {
     },
   );
 
-socket.on("disconnect", () => {
-  const lobbyId = socket.data.lobbyId;
+  socket.on("disconnect", () => {
+    const lobbyId = socket.data.lobbyId;
 
-  if (!lobbyId) return;
+    if (!lobbyId) return;
 
-  const lobby = gameStore.get(lobbyId);
-  if (!lobby) return;
+    const lobby = gameStore.get(lobbyId);
+    if (!lobby) return;
 
-  lobby.players = lobby.players.filter(
-    (p) => p.socketId !== socket.id
-  );
+    lobby.players = lobby.players.filter((p) => p.socketId !== socket.id);
 
-  io.to(lobbyId).emit("players-update", lobby.players);
-});
+    io.to(lobbyId).emit("players-update", lobby.players);
+  });
 }

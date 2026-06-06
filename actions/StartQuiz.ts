@@ -19,19 +19,19 @@ export async function startQuiz(
     body: JSON.stringify({ lobbyId }),
   });
 
-  await db.insert(questions).values(
-    generatedQuestions.map((q, index) => ({
-      lobbyId,
-      questionNumber: index + 1,
+await db.insert(questions).values(
+  generatedQuestions.map((q, index) => ({
+    lobbyId,
+    questionNumber: index + 1,
 
-      question: q.question,
+    question: q.question,
 
-      optionA: q.options[0],
-      optionB: q.options[1],
-      optionC: q.options[2],
-      optionD: q.options[3],
+    optionA: q.options[0],
+    optionB: q.options[1],
+    optionC: q.options[2],
+    optionD: q.options[3],
 
-      answer: q.answer,
-    })),
-  );
+    answer: q.answer,
+  }))
+);
 }

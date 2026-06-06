@@ -30,15 +30,17 @@ export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
     <div>
       <h2>{question.question}</h2>
 
-      {question.options.map((option) => (
-        <button
-          key={option}
-          disabled={answered}
-          onClick={() => submitAnswer(option)}
-        >
-          {option}
-        </button>
-      ))}
+      {[question.optionA, question.optionB, question.optionC, question.optionD]
+        .filter(Boolean)
+        .map((option: string, index: number) => (
+          <button
+            key={`${index}-${option}`}
+            disabled={answered}
+            onClick={() => submitAnswer(option)}
+          >
+            {option}
+          </button>
+        ))}
     </div>
   );
 }

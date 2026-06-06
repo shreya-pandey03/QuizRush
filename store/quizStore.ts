@@ -1,6 +1,10 @@
 import { create } from "zustand";
 
 type Question = {
+  optionA: any;
+  optionB: any;
+  optionC: any;
+  optionD: any;
   question: string;
   options: string[];
   answer: string;

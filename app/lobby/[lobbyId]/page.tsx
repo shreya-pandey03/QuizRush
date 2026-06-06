@@ -6,8 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import QuizLobbyClient from "./QuizLobbyClient";
 import { socket } from "@/lib/socket/socket";
 
-
-
 export default function LobbyRoomPage() {
   const params = useParams();
 
@@ -21,7 +19,6 @@ export default function LobbyRoomPage() {
     }[]
   >([]);
   const [quizStarted, setQuizStarted] = useState(false);
-  
 
   const lobbyId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
@@ -40,52 +37,45 @@ export default function LobbyRoomPage() {
   }, []);
 
   // Socket connection
-useEffect(() => {
-  if (!lobbyId) return;
+  useEffect(() => {
+    if (!lobbyId) return;
 
-  let guestId = localStorage.getItem("guestId");
+    let guestId = localStorage.getItem("guestId");
 
-  if (!guestId) {
-    guestId = crypto.randomUUID();
-    localStorage.setItem("guestId", guestId);
-  }
+    if (!guestId) {
+      guestId = crypto.randomUUID();
+      localStorage.setItem("guestId", guestId);
+    }
 
-   if (!socket.connected) {
-    socket.connect();
-  }
+    if (!socket.connected) {
+      socket.connect();
+    }
 
+    const user = {
+      id: guestId,
+      name: guestId.slice(0, 6),
+    };
 
-  const user = {
-    id: guestId,
-    name: guestId.slice(0, 6),
-  };
+    socket.emit("joinRoomWithUser", {
+      roomId: lobbyId,
+      user,
+    });
 
-  socket.emit("joinRoomWithUser", {
-    roomId: lobbyId,
-    user,
-  });
+    const handlePlayersUpdated = (
+      updatedPlayers: {
+        id: string;
+        name: string;
+      }[],
+    ) => {
+      setPlayers(updatedPlayers);
+    };
 
-  const handlePlayersUpdated = (
-    updatedPlayers: {
-      id: string;
-      name: string;
-    }[]
-  ) => {
-    setPlayers(updatedPlayers);
-  };
+    socket.on("playersUpdated", handlePlayersUpdated);
 
-  socket.on(
-    "playersUpdated",
-    handlePlayersUpdated
-  );
-
-  return () => {
-    socket.off(
-      "playersUpdated",
-      handlePlayersUpdated
-    );
-  };
-}, [lobbyId]);
+    return () => {
+      socket.off("playersUpdated", handlePlayersUpdated);
+    };
+  }, [lobbyId]);
 
   // Copy lobby ID
   async function copyRoomId() {
@@ -102,17 +92,17 @@ useEffect(() => {
   // Start quiz
   function startQuiz() {
     if (quizStarted) return;
+
     setQuizStarted(true);
 
-    // Emit to server (notify other players)
-if (lobbyId) {
-  socket.emit("startQuiz", lobbyId);
-}
+    if (lobbyId) {
+      socket.emit("start-quiz", {
+        lobbyId,
+      });
+    }
 
-    // Redirect immediately — don't wait for socket response
     router.push(`/quiz/${lobbyId}`);
   }
-
   return (
     <main
       className="relative min-h-screen overflow-x-hidden p-8"

@@ -6,8 +6,6 @@ import { useSession } from "next-auth/react";
 import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
 import { socket } from "@/lib/socket/socket";
 
-
-
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
@@ -21,12 +19,47 @@ export default function QuizPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   type Question = {
-  question: string;
-  options: string[];
-  answer?: string;
-};
+    optionA: any;
+    optionB: any;
+    optionC: any;
+    optionD: any;
+    question: string;
+    options: string[];
+    answer: string;
+  };
 
-const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+
+  useEffect(() => {
+    async function loadQuestions() {
+      try {
+        const res = await fetch(`/api/questions?lobbyId=${roomId}`);
+
+        const data = await res.json();
+
+        console.log("QUESTIONS FROM API:", data);
+
+        setQuestions(data.questions || []);
+      } catch (err) {
+        console.error("LOAD QUESTIONS ERROR:", err);
+      }
+    }
+
+    if (roomId) {
+      loadQuestions();
+    }
+  }, [roomId]);
+
+  useEffect(() => {
+    socket.on("quizStarted", (data) => {
+      console.log("QUIZ STARTED RECEIVED", data);
+      setQuestions(data.questions);
+    });
+
+    return () => {
+      socket.off("quizStarted");
+    };
+  }, []);
 
   // const questions = [
   //   {
@@ -69,146 +102,147 @@ const [questions, setQuestions] = useState<Question[]>([]);
   // ];
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
+
   // const [answers, setAnswers] = useState<string[]>(
   //   Array(questions.length).fill(""),
   // );
 
-const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizEnded, setQuizEnded] = useState(false);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  if (session?.user?.email) {
-    setUserId(session.user.email);
-    return;
-  }
-
-  let guestId = localStorage.getItem("guestId");
-
-  if (!guestId) {
-    guestId = crypto.randomUUID();
-    localStorage.setItem("guestId", guestId);
-  }
-
-  setUserId(guestId);
-}, [session]);
-
-useEffect(() => {
-  if (!userId) return;
-
-  if (!socket.connected) {
-    socket.connect();
-  }
-
-  socket.emit("joinRoom", roomId);
-
-  return () => {
-    socket.off("quizStarted");
-    socket.off("playersUpdated");
-  };
-}, [roomId, userId]);
-
-useEffect(() => {
-  if (!userId) return;
-
-  async function loadProgress() {
-    try {
-      const res = await fetch(
-        `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`
-      );
-
-      const data = await res.json();
-
-      if (data?.id) {
-        setCurrentQuestion(data.currentQuestion ?? 0);
-        setAnswers(data.answers ?? Array(questions.length).fill(""));
-        setScore(data.score ?? 0);
-        setQuizEnded(data.quizEnded ?? false);
-      }
-    } catch {
-      // Optional: show toast here later
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (session?.user?.email) {
+      setUserId(session.user.email);
+      return;
     }
-  }
 
-  loadProgress();
-}, [userId, roomId, questions.length]);
+    let guestId = localStorage.getItem("guestId");
 
-// useEffect(() => {
-//   if (loading || !userId) return;
+    if (!guestId) {
+      guestId = crypto.randomUUID();
+      localStorage.setItem("guestId", guestId);
+    }
 
-//   fetch("/api/quiz-progress", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify({
-//       lobbyId: roomId,
-//       userId,
-//       currentQuestion,
-//       answers,
-//       score,
-//       quizEnded,
-//     }),
-//   });
-// }, [
-//   currentQuestion,
-//   answers,
-//   score,
-//   quizEnded,
-//   loading,
-//   userId,
-//   roomId,
-// ]);
+    setUserId(guestId);
+  }, [session]);
 
-useEffect(() => {
-  if (loading || quizEnded) return;
+  useEffect(() => {
+    if (!userId) return;
 
-  if (timerRef.current) {
-    clearInterval(timerRef.current);
-  }
+    if (!socket.connected) {
+      socket.connect();
+    }
 
-  timerRef.current = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev <= 1) {
-        moveNext();
-        return 30;
+    socket.emit("joinRoom", roomId);
+
+    return () => {
+      socket.off("quizStarted");
+      socket.off("playersUpdated");
+    };
+  }, [roomId, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    async function loadProgress() {
+      try {
+        const res = await fetch(
+          `/api/quiz-progress?lobbyId=${roomId}&userId=${userId}`,
+        );
+
+        const data = await res.json();
+
+        if (data?.id) {
+          setCurrentQuestion(data.currentQuestion ?? 0);
+          setAnswers(data.answers ?? Array(questions.length).fill(""));
+          setScore(data.score ?? 0);
+          setQuizEnded(data.quizEnded ?? false);
+        }
+      } catch {
+        // Optional: show toast here later
+      } finally {
+        setLoading(false);
       }
+    }
 
-      return prev - 1;
-    });
-  }, 1000);
+    loadProgress();
+  }, [userId, roomId, questions.length]);
 
-  return () => {
+  // useEffect(() => {
+  //   if (loading || !userId) return;
+
+  //   fetch("/api/quiz-progress", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       lobbyId: roomId,
+  //       userId,
+  //       currentQuestion,
+  //       answers,
+  //       score,
+  //       quizEnded,
+  //     }),
+  //   });
+  // }, [
+  //   currentQuestion,
+  //   answers,
+  //   score,
+  //   quizEnded,
+  //   loading,
+  //   userId,
+  //   roomId,
+  // ]);
+
+  useEffect(() => {
+    if (loading || quizEnded) return;
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-  };
-}, [currentQuestion, quizEnded, loading]);
 
-function finishQuiz() {
-  let finalScore = 0;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          moveNext();
+          return 30;
+        }
 
-  answers.forEach((answer, index) => {
-    if (answer === questions[index].answer) {
-      finalScore++;
-    }
-  });
+        return prev - 1;
+      });
+    }, 1000);
 
-  setScore(finalScore);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [currentQuestion, quizEnded, loading]);
 
-  socket.emit("update-score", {
-    lobbyId: roomId,
-    playerId: userId,
-    score: finalScore,
-  });
+  function finishQuiz() {
+    let finalScore = 0;
 
-  setQuizEnded(true);
-}
+    answers.forEach((answer, index) => {
+      if (answer === questions[index].answer) {
+        finalScore++;
+      }
+    });
+
+    setScore(finalScore);
+
+    socket.emit("update-score", {
+      lobbyId: roomId,
+      playerId: userId,
+      score: finalScore,
+    });
+
+    setQuizEnded(true);
+  }
 
   function moveNext() {
     if (currentQuestion < questions.length - 1) {
@@ -597,43 +631,45 @@ function finishQuiz() {
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 6 }}
                 >
-                  {q.options.map((option) => {
-                    const isCorrect = option === q.answer;
-                    const isWrong = option === answers[index] && !isCorrect;
-                    return (
-                      <div
-                        key={option}
-                        style={{
-                          padding: "9px 14px",
-                          borderRadius: 8,
-                          fontSize: 13,
-                          fontFamily: "Georgia, serif",
-                          background: isCorrect
-                            ? "rgba(59,109,17,.18)"
-                            : isWrong
-                              ? "rgba(163,45,45,.15)"
-                              : "rgba(245,240,232,.03)",
-                          border: `0.5px solid ${isCorrect ? "#3B6D11" : isWrong ? "#A32D2D" : "rgba(245,240,232,.08)"}`,
-                          color: isCorrect
-                            ? "#97C459"
-                            : isWrong
-                              ? "#F09595"
-                              : "rgba(245,240,232,.45)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        {option}
-                        {isCorrect && (
-                          <span style={{ fontSize: 11 }}>✓ Correct</span>
-                        )}
-                        {isWrong && (
-                          <span style={{ fontSize: 11 }}>✗ Wrong</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {[q.optionA, q.optionB, q.optionC, q.optionD].map(
+                    (option: string) => {
+                      const isCorrect = option === q.answer;
+                      const isWrong = option === answers[index] && !isCorrect;
+                      return (
+                        <div
+                          key={option}
+                          style={{
+                            padding: "9px 14px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontFamily: "Georgia, serif",
+                            background: isCorrect
+                              ? "rgba(59,109,17,.18)"
+                              : isWrong
+                                ? "rgba(163,45,45,.15)"
+                                : "rgba(245,240,232,.03)",
+                            border: `0.5px solid ${isCorrect ? "#3B6D11" : isWrong ? "#A32D2D" : "rgba(245,240,232,.08)"}`,
+                            color: isCorrect
+                              ? "#97C459"
+                              : isWrong
+                                ? "#F09595"
+                                : "rgba(245,240,232,.45)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          {option}
+                          {isCorrect && (
+                            <span style={{ fontSize: 11 }}>✓ Correct</span>
+                          )}
+                          {isWrong && (
+                            <span style={{ fontSize: 11 }}>✗ Wrong</span>
+                          )}
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
               </div>
             ))}
@@ -644,18 +680,86 @@ function finishQuiz() {
   }
 
   // ── Active quiz screen ─────────────────────────────────────────────────────
-  if (!questions.length) {
+ 
+if (!questions.length) {
   return (
     <main
-      className="min-h-screen flex items-center justify-center"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ background: "#0a0a0a" }}
     >
-      <h1 style={{ color: "#ea781e" }}>
-        Waiting for host to start quiz...
-      </h1>
+      {/* Grid */}
+      <div className="fixed inset-0 pointer-events-none" style={{ backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`, backgroundSize: "48px 48px", zIndex: 0 }} />
+      {/* Top glow */}
+      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(234,120,30,.14) 0%, transparent 68%)", zIndex: 0 }} />
+      {/* Bottom-right glow */}
+      <div className="fixed bottom-0 right-0 pointer-events-none" style={{ width: 400, height: 400, borderRadius: "50%", background: "rgba(234,120,30,.07)", filter: "blur(100px)", zIndex: 0 }} />
+      {/* Scanline */}
+      <div className="fixed left-0 right-0 pointer-events-none" style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)", animation: "qrScan 6s linear infinite", zIndex: 1 }} />
+      {/* Orbs */}
+      <div className="fixed pointer-events-none" style={{ top: "18%", left: "5%", width: 76, height: 76, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", boxShadow: "0 0 0 1px rgba(234,120,30,.3),0 0 34px rgba(234,120,30,.18)", animation: "floatA 8s ease-in-out infinite", opacity: 0.42, zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ top: "58%", right: "5%", width: 48, height: 48, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", animation: "floatB 10s ease-in-out infinite", opacity: 0.38, zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ bottom: "18%", left: "9%", width: 26, height: 26, borderRadius: "50%", background: "#1a0a03", border: "1px solid rgba(234,120,30,.4)", animation: "floatC 6s ease-in-out infinite", opacity: 0.5, zIndex: 0 }} />
+      {/* Rings */}
+      <div className="fixed pointer-events-none" style={{ top: "6%", left: "2%", width: 100, height: 100, borderRadius: "50%", border: "0.5px solid rgba(234,120,30,.14)", animation: "spinRing 22s linear infinite", zIndex: 0 }} />
+      <div className="fixed pointer-events-none" style={{ bottom: "8%", right: "3%", width: 64, height: 64, borderRadius: "50%", border: "0.5px solid rgba(234,120,30,.11)", animation: "spinRing 16s linear infinite reverse", zIndex: 0 }} />
+
+      {/* Card */}
+      <div className="relative flex flex-col items-center text-center" style={{ zIndex: 10, maxWidth: 420, width: "100%", margin: "0 1rem", padding: "3rem 2.5rem", borderRadius: 20, background: "rgba(13,13,13,.9)", backdropFilter: "blur(20px)", border: "0.5px solid rgba(234,120,30,.2)", boxShadow: "0 0 0 0.5px rgba(234,120,30,.08), 0 32px 80px rgba(0,0,0,.55)" }}>
+        {/* Icon */}
+        <div style={{ width: 72, height: 72, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, boxShadow: "0 0 0 1px rgba(234,120,30,.4), 0 12px 32px rgba(234,120,30,.25)", animation: "floatA 5s ease-in-out infinite", marginBottom: "1.5rem" }}>
+          ⏳
+        </div>
+
+        <div style={{ fontSize: 10, letterSpacing: ".15em", textTransform: "uppercase", color: "#ea781e", marginBottom: 10 }}>
+          QuizRush — Standby
+        </div>
+
+        <h1 style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 400, color: "#f5f0e8", lineHeight: 1.3, marginBottom: 8 }}>
+          Waiting for host to{" "}
+          <span style={{ color: "#ea781e", fontStyle: "italic" }}>start the quiz…</span>
+        </h1>
+
+        <p style={{ fontFamily: "Georgia, serif", fontSize: 14, color: "rgba(245,240,232,.45)", lineHeight: 1.7, marginBottom: "2rem" }}>
+          The host is setting things up.<br />
+          Get ready — questions drop any second.
+        </p>
+
+        {/* Bouncing dots */}
+        <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: "2rem" }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#ea781e", animation: `dotBounce 1.2s ease-in-out infinite ${i * 0.2}s` }} />
+          ))}
+        </div>
+
+        {/* Badge */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(234,120,30,.1)", border: "0.5px solid rgba(234,120,30,.35)", borderRadius: 100, padding: "5px 14px", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "#ea781e" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ea781e", display: "inline-block", animation: "qrBlink 1s step-end infinite" }} />
+          Connected to room
+        </div>
+
+        <div style={{ width: "100%", height: "0.5px", background: "rgba(234,120,30,.15)", margin: "1.5rem 0" }} />
+
+        <p style={{ fontSize: 11, color: "rgba(245,240,232,.2)", fontFamily: "Georgia, serif" }}>
+          You'll be taken to the quiz automatically
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes qrScan   { 0%{top:-2%} 100%{top:102%} }
+        @keyframes qrBlink  { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes floatA   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+        @keyframes floatB   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+        @keyframes floatC   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes spinRing { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+      `}</style>
     </main>
   );
 }
+
+
+
+  
   const progress = (currentQuestion / questions.length) * 100;
   const timerPct = (timeLeft / 30) * 100;
   const timerDanger = timeLeft <= 8;
@@ -837,7 +941,12 @@ function finishQuiz() {
 
           {/* Options */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {questions[currentQuestion].options.map((option, i) => {
+            {[
+              questions[currentQuestion].optionA,
+              questions[currentQuestion].optionB,
+              questions[currentQuestion].optionC,
+              questions[currentQuestion].optionD,
+            ].map((option: string, i: number) => {
               const selected = answers[currentQuestion] === option;
               return (
                 <button
