@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
 import { socket } from "@/lib/socket/socket";
 
+
+
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
@@ -18,50 +20,61 @@ export default function QuizPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const questions = [
-    {
-      question: "What is the capital of India?",
-      options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
-      answer: "Delhi",
-    },
-    { question: "2 + 2 = ?", options: ["2", "4", "8", "10"], answer: "4" },
-    {
-      question: "Largest planet?",
-      options: ["Earth", "Mars", "Jupiter", "Venus"],
-      answer: "Jupiter",
-    },
-    {
-      question: "HTML stands for?",
-      options: [
-        "Hyper Text Markup Language",
-        "Home Tool Markup Language",
-        "Hyper Tool",
-        "Markup Text",
-      ],
-      answer: "Hyper Text Markup Language",
-    },
-    {
-      question: "React created by?",
-      options: ["Google", "Meta", "Microsoft", "Netflix"],
-      answer: "Meta",
-    },
-    { question: "5 × 6 = ?", options: ["30", "40", "20", "10"], answer: "30" },
-    {
-      question: "Fastest animal?",
-      options: ["Lion", "Tiger", "Cheetah", "Elephant"],
-      answer: "Cheetah",
-    },
-    {
-      question: "CSS used for?",
-      options: ["Database", "Styling", "Backend", "Authentication"],
-      answer: "Styling",
-    },
-  ];
+  type Question = {
+  question: string;
+  options: string[];
+  answer?: string;
+};
+
+const [questions, setQuestions] = useState<Question[]>([]);
+
+  // const questions = [
+  //   {
+  //     question: "What is the capital of India?",
+  //     options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
+  //     answer: "Delhi",
+  //   },
+  //   { question: "2 + 2 = ?", options: ["2", "4", "8", "10"], answer: "4" },
+  //   {
+  //     question: "Largest planet?",
+  //     options: ["Earth", "Mars", "Jupiter", "Venus"],
+  //     answer: "Jupiter",
+  //   },
+  //   {
+  //     question: "HTML stands for?",
+  //     options: [
+  //       "Hyper Text Markup Language",
+  //       "Home Tool Markup Language",
+  //       "Hyper Tool",
+  //       "Markup Text",
+  //     ],
+  //     answer: "Hyper Text Markup Language",
+  //   },
+  //   {
+  //     question: "React created by?",
+  //     options: ["Google", "Meta", "Microsoft", "Netflix"],
+  //     answer: "Meta",
+  //   },
+  //   { question: "5 × 6 = ?", options: ["30", "40", "20", "10"], answer: "30" },
+  //   {
+  //     question: "Fastest animal?",
+  //     options: ["Lion", "Tiger", "Cheetah", "Elephant"],
+  //     answer: "Cheetah",
+  //   },
+  //   {
+  //     question: "CSS used for?",
+  //     options: ["Database", "Styling", "Backend", "Authentication"],
+  //     answer: "Styling",
+  //   },
+  // ];
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(
-    Array(questions.length).fill(""),
-  );
+  // const [answers, setAnswers] = useState<string[]>(
+  //   Array(questions.length).fill(""),
+  // );
+
+const [answers, setAnswers] = useState<string[]>([]);
+
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizEnded, setQuizEnded] = useState(false);
@@ -125,32 +138,32 @@ useEffect(() => {
   loadProgress();
 }, [userId, roomId, questions.length]);
 
-useEffect(() => {
-  if (loading || !userId) return;
+// useEffect(() => {
+//   if (loading || !userId) return;
 
-  fetch("/api/quiz-progress", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      lobbyId: roomId,
-      userId,
-      currentQuestion,
-      answers,
-      score,
-      quizEnded,
-    }),
-  });
-}, [
-  currentQuestion,
-  answers,
-  score,
-  quizEnded,
-  loading,
-  userId,
-  roomId,
-]);
+//   fetch("/api/quiz-progress", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//     body: JSON.stringify({
+//       lobbyId: roomId,
+//       userId,
+//       currentQuestion,
+//       answers,
+//       score,
+//       quizEnded,
+//     }),
+//   });
+// }, [
+//   currentQuestion,
+//   answers,
+//   score,
+//   quizEnded,
+//   loading,
+//   userId,
+//   roomId,
+// ]);
 
 useEffect(() => {
   if (loading || quizEnded) return;
@@ -631,6 +644,18 @@ function finishQuiz() {
   }
 
   // ── Active quiz screen ─────────────────────────────────────────────────────
+  if (!questions.length) {
+  return (
+    <main
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: "#0a0a0a" }}
+    >
+      <h1 style={{ color: "#ea781e" }}>
+        Waiting for host to start quiz...
+      </h1>
+    </main>
+  );
+}
   const progress = (currentQuestion / questions.length) * 100;
   const timerPct = (timeLeft / 30) * 100;
   const timerDanger = timeLeft <= 8;

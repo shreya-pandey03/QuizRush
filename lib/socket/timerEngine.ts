@@ -1,37 +1,34 @@
 import { Server } from "socket.io";
-import { rooms } from "./gameStore";
+import { gameStore } from "./gameStore";
 
 export function startTimer(io: Server) {
   setInterval(() => {
-    rooms.forEach((room, roomId) => {
+    gameStore.forEach((room, roomId) => {
       if (!room.started) return;
 
-      room.timeLeft--;
+      room.timer--;
 
-      io.to(roomId).emit(
-        "timerUpdate",
-        room.timeLeft
-      );
+      io.to(roomId).emit("timerUpdate", room.timer);
 
-      if (room.timeLeft <= 0) {
-        room.currentQuestion++;
+      if (room.timer <= 0) {
+        room.currentQuestionIndex++;
 
-        if (
-          room.currentQuestion >= room.questions.length
-        ) {
-          io.to(roomId).emit(
-            "quizFinished",
-            room.players
-          );
+        if (room.currentQuestionIndex >= room.questions.length) {
+          room.started = false;
+
+          io.to(roomId).emit("quizFinished", room.players);
+
           return;
         }
 
-        room.timeLeft = 15;
+        room.timer = 15;
 
-        io.to(roomId).emit(
-          "newQuestion",
-          room.questions[room.currentQuestion]
-        );
+        const nextQuestion = room.questions[room.currentQuestionIndex];
+
+        io.to(roomId).emit("newQuestion", {
+          question: nextQuestion.question,
+          options: nextQuestion.options,
+        });
       }
     });
   }, 1000);

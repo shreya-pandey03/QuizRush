@@ -20,6 +20,8 @@ export function quizHandlers(io: Server, socket: Socket) {
 
       lobby.questions = generatedQuestions;
 
+console.log(generatedQuestions);
+
       await db.insert(questions).values(
         generatedQuestions.map(
           (q: { question: any; options: any[]; answer: any }) => ({
@@ -38,10 +40,13 @@ export function quizHandlers(io: Server, socket: Socket) {
 
     const firstQuestion = lobby.questions[0];
 
-    io.to(lobbyId).emit("quiz-started", {
-      question: firstQuestion.question,
-      options: firstQuestion.options,
-    });
+io.to(lobbyId).emit(
+  "quiz-started",
+  {
+    question: firstQuestion.question,
+    options: firstQuestion.options,
+  }
+);
 
     startTimer(io, lobbyId);
   });

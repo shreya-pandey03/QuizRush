@@ -18,14 +18,14 @@ Difficulty: ${difficulty}
 Return ONLY valid JSON.
 
 [
-  {
-    "question":"...",
-    "optionA":"...",
-    "optionB":"...",
-    "optionC":"...",
-    "optionD":"...",
-    "answer":"..."
-  }
+ {
+  "question":"...",
+  "optionA":"...",
+  "optionB":"...",
+  "optionC":"...",
+  "optionD":"...",
+  "answer":"..."
+ }
 ]
 `;
 
@@ -41,5 +41,16 @@ Return ONLY valid JSON.
     .replace(/```/g, "")
     .trim();
 
-  return JSON.parse(cleaned);
+  const parsed = JSON.parse(cleaned);
+
+  return parsed.map((q: any) => ({
+    question: q.question,
+    options: [
+      q.optionA,
+      q.optionB,
+      q.optionC,
+      q.optionD,
+    ],
+    answer: q.answer,
+  }));
 }
