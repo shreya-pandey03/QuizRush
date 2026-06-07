@@ -7,11 +7,14 @@ export async function startQuiz(
   lobbyId: string,
   generatedQuestions: {
     question: string;
-    options: string[];
+    optionA: string;
+    optionB: string;
+    optionC: string;
+    optionD: string;
     answer: string;
-  }[],
+  }[]
 ) {
-  await fetch("http://localhost:3001/api/lobby/start", {
+ await fetch("http://localhost:3001/api/lobby/start", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -19,19 +22,19 @@ export async function startQuiz(
     body: JSON.stringify({ lobbyId }),
   });
 
-await db.insert(questions).values(
-  generatedQuestions.map((q, index) => ({
-    lobbyId,
-    questionNumber: index + 1,
+  await db.insert(questions).values(
+    generatedQuestions.map((q, index) => ({
+      lobbyId,
+      questionNumber: index + 1,
 
-    question: q.question,
+      question: q.question,
 
-    optionA: q.options[0],
-    optionB: q.options[1],
-    optionC: q.options[2],
-    optionD: q.options[3],
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      optionD: q.optionD,
 
-    answer: q.answer,
-  }))
-);
+      answer: q.answer,
+    }))
+  );
 }

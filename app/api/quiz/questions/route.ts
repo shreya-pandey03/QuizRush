@@ -4,8 +4,13 @@ export async function GET() {
   return NextResponse.json([
     {
       question: "What is the capital of India?",
-      options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
-      answer: "Delhi",
+
+      optionA: "Mumbai",
+      optionB: "Delhi",
+      optionC: "Chennai",
+      optionD: "Kolkata",
+
+      answer: "optionB",
     },
   ]);
 }

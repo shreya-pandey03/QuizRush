@@ -6,51 +6,71 @@ import { db } from "@/drizzle/src/db";
 import { questions } from "@/drizzle/src/db/schema";
 
 export function quizHandlers(io: Server, socket: Socket) {
-socket.on("start-quiz", async ({ lobbyId }) => {
-  console.log("START QUIZ RECEIVED:", lobbyId);
+  socket.on("start-quiz", async ({ lobbyId }) => {
+    console.log("START QUIZ RECEIVED:", lobbyId);
 
-  const lobby = gameStore.get(lobbyId);
+    const lobby = gameStore.get(lobbyId);
+    if (!lobby) return;
 
-  if (!lobby) return;
+    console.log("LOBBY FOUND:", !!lobby);
 
-  console.log("LOBBY FOUND:", !!lobby);
+    //  RESET STATE EVERY TIME QUIZ STARTS
+    lobby.started = false;
+    lobby.answers = {};
+    lobby.scores = {};
 
-  // prevent double start
-  if (lobby.started) {
-    io.to(lobbyId).emit("quiz-started", lobby.questions);
-    return;
-  }
+    // prevent double start
+    if (lobby.started) {
+      io.to(lobbyId).emit("quiz-started", lobby.questions);
+      return;
+    }
 
-  if (!lobby.questions || lobby.questions.length === 0) {
-    const seed = Date.now() + Math.random();
+    // generate only once
+    if (!lobby.questions || lobby.questions.length === 0) {
+      const seed = Date.now() + Math.random();
 
-    const generatedQuestions = await generateQuestions(
-      lobby.category,
-      lobby.difficulty,
-      10,
-      seed
-    );
+      const generatedQuestions = await generateQuestions(
+        String(lobby.category),
+        String(lobby.difficulty),
+        10,
+        seed,
+      );
 
-    lobby.questions = generatedQuestions;
+      lobby.questions = generatedQuestions.map((q) => ({
+        id: crypto.randomUUID(),
 
-    await db.insert(questions).values(
-      generatedQuestions.map((q: { question: any; options: any[]; answer: any; }, index: number) => ({
-        lobbyId,
-        questionNumber: index + 1,
         question: q.question,
-        optionA: q.options[0],
-        optionB: q.options[1],
-        optionC: q.options[2],
-        optionD: q.options[3],
+
+        optionA: q.optionA,
+        optionB: q.optionB,
+        optionC: q.optionC,
+        optionD: q.optionD,
+
         answer: q.answer,
-      }))
-    );
-  }
+      }));
 
-  lobby.started = true;
+      // save to DB
+      await db.insert(questions).values(
+        lobby.questions.map((q, index) => ({
+          lobbyId,
+          questionNumber: index + 1,
 
-  io.to(lobbyId).emit("quiz-started", lobby.questions);
+          question: q.question,
 
-  startTimer(io, lobbyId);
-});
+          optionA: q.optionA,
+          optionB: q.optionB,
+          optionC: q.optionC,
+          optionD: q.optionD,
+
+          answer: q.answer,
+        })),
+      );
+    }
+
+    lobby.started = true;
+
+    io.to(lobbyId).emit("quiz-started", lobby.questions);
+
+    startTimer(io, lobbyId);
+  });
 }

@@ -28,6 +28,10 @@ export const lobbies = pgTable("lobbies", {
 
   code: text("code").unique(),
 
+  category: text("category"),
+
+  difficulty: text("difficulty"),
+
   isStarted: boolean("isStarted").default(false),
 
   createdAt: timestamp("createdAt").defaultNow(),

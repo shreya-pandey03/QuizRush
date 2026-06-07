@@ -32,14 +32,27 @@ export function playerHandlers(io: Server, socket: Socket) {
         }
 
         lobby = {
-          status: "waiting",
           id: dbLobby.code,
           hostId: dbLobby.hostId,
+
+          category: "General",
+          difficulty: "Easy",
+
+          status: "waiting",
+
           players: [],
-          currentQuestionIndex: 0,
+
           questions: [],
+
+          currentQuestionIndex: 0,
+
           timer: 15,
+
           started: false,
+
+          answers: {},
+
+          scores: {},
         };
 
         gameStore.set(lobbyId, lobby);
@@ -47,17 +60,20 @@ export function playerHandlers(io: Server, socket: Socket) {
 
       socket.join(lobbyId);
 
+      // IMPORTANT
+      socket.data.lobbyId = lobbyId;
+
       const index = lobby.players.findIndex((p) => p.id === player.id);
 
       if (index !== -1) {
-        // update existing player (refresh / reconnect case)
+        // reconnect
         lobby.players[index] = {
           ...lobby.players[index],
           name: player.name,
           socketId: socket.id,
         };
       } else {
-        // new player join
+        // new player
         lobby.players.push({
           id: player.id,
           name: player.name,
@@ -67,9 +83,23 @@ export function playerHandlers(io: Server, socket: Socket) {
         });
       }
 
-      io.to(lobbyId).emit("players-update", lobby.players);
+      io.to(lobbyId).emit(
+        "players-update",
+        [...lobby.players].sort((a, b) => b.score - a.score),
+      );
+
+      // if quiz already started, send quiz state
+      if (lobby.started && lobby.questions.length > 0) {
+        socket.emit("quiz-started", lobby.questions);
+
+        socket.emit("timer-update", {
+          timeLeft: lobby.timer,
+        });
+      }
     } catch (err) {
       console.error("JOIN LOBBY ERROR:", err);
+
+      socket.emit("error", "Failed to join lobby");
     }
   });
 

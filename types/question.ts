@@ -1,10 +1,19 @@
-export type Question = {
-  optionA: any;
-  optionB: any;
-  optionC: any;
-  optionD: any;
-  id: any;
+
+
+export type AnswerKey =
+  | "optionA"
+  | "optionB"
+  | "optionC"
+  | "optionD";
+
+export interface Question {
+  id: string;
   question: string;
-  options: string[];
-  answer: string;
-};
+
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+
+  answer: AnswerKey;
+}

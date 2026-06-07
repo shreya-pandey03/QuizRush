@@ -27,7 +27,13 @@ export function startTimer(io: Server) {
 
         io.to(roomId).emit("newQuestion", {
           question: nextQuestion.question,
-          options: nextQuestion.options,
+
+          optionA: nextQuestion.optionA,
+          optionB: nextQuestion.optionB,
+          optionC: nextQuestion.optionC,
+          optionD: nextQuestion.optionD,
+
+          answer: nextQuestion.answer,
         });
       }
     });

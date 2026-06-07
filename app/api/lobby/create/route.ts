@@ -10,34 +10,44 @@ export async function POST(req: Request) {
   try {
     const { name, hostId } = await req.json();
 
-const lobby = await db
-  .insert(lobbies)
-  .values({
-    name,
-    hostId,
-    code: generateCode(),
-  })
-  .returning();
-  const roomCode = lobby[0].code;
+    const lobby = await db
+      .insert(lobbies)
+      .values({
+        name,
+        hostId,
+        code: generateCode(),
+      })
+      .returning();
+    const roomCode = lobby[0].code;
 
-if (!roomCode) {
-  throw new Error("Room code is missing");
-}
+    if (!roomCode) {
+      throw new Error("Room code is missing");
+    }
 
-gameStore.set(roomCode, {
+    gameStore.set(roomCode, {
+      id: roomCode,
+      hostId,
 
-  id: lobby[0].id,
-  hostId,
-  players: [],
-  currentQuestionIndex: 0,
-  questions: [],
-  timer: 15,
-  started: false,
-});
-console.log(
-  "GameStore Keys:",
-  [...gameStore.keys()]
-);
+      status: "waiting",
+
+      category: "General",
+      difficulty: "Easy",
+
+      players: [],
+
+      questions: [],
+
+      currentQuestionIndex: 0,
+
+      timer: 15,
+
+      started: false,
+
+      answers: {},
+
+      scores: {},
+    });
+    console.log("GameStore Keys:", [...gameStore.keys()]);
 
     // host automatically joins own room
     await db.insert(lobbyPlayers).values({

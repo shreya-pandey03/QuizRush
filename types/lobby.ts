@@ -2,10 +2,17 @@ import { Player } from "./player";
 import { Question } from "./question";
 
 export type Lobby = {
-  [x: string]: string;
-  status: string;
   id: string;
   hostId: string;
+
+  category: string;
+  difficulty: string;
+
+  status:
+    | "waiting"
+    | "started"
+    | "playing"
+    | "finished";
 
   players: Player[];
 
@@ -16,4 +23,8 @@ export type Lobby = {
   timer: number;
 
   started: boolean;
+
+  answers: Record<string, string[]>;
+
+  scores: Record<string, number>;
 };

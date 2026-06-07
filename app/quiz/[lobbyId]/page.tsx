@@ -18,14 +18,17 @@ export default function QuizPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  type AnswerKey = "optionA" | "optionB" | "optionC" | "optionD";
+
   type Question = {
-    optionA: any;
-    optionB: any;
-    optionC: any;
-    optionD: any;
     question: string;
-    options: string[];
-    answer: string;
+
+    optionA: string;
+    optionB: string;
+    optionC: string;
+    optionD: string;
+
+    answer: AnswerKey;
   };
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -40,6 +43,7 @@ export default function QuizPage() {
         console.log("QUESTIONS FROM API:", data);
 
         setQuestions(data.questions || []);
+        console.log("API QUESTIONS:", data.questions);
       } catch (err) {
         console.error("LOAD QUESTIONS ERROR:", err);
       }
@@ -107,7 +111,7 @@ export default function QuizPage() {
   //   Array(questions.length).fill(""),
   // );
 
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<AnswerKey[]>([]);
 
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -172,32 +176,11 @@ export default function QuizPage() {
     loadProgress();
   }, [userId, roomId, questions.length]);
 
-  // useEffect(() => {
-  //   if (loading || !userId) return;
-
-  //   fetch("/api/quiz-progress", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({
-  //       lobbyId: roomId,
-  //       userId,
-  //       currentQuestion,
-  //       answers,
-  //       score,
-  //       quizEnded,
-  //     }),
-  //   });
-  // }, [
-  //   currentQuestion,
-  //   answers,
-  //   score,
-  //   quizEnded,
-  //   loading,
-  //   userId,
-  //   roomId,
-  // ]);
+  useEffect(() => {
+    if (questions.length > 0) {
+      setAnswers(Array(questions.length).fill(""));
+    }
+  }, [questions]);
 
   useEffect(() => {
     if (loading || quizEnded) return;
@@ -234,13 +217,6 @@ export default function QuizPage() {
     });
 
     setScore(finalScore);
-
-    socket.emit("update-score", {
-      lobbyId: roomId,
-      playerId: userId,
-      score: finalScore,
-    });
-
     setQuizEnded(true);
   }
 
@@ -258,9 +234,9 @@ export default function QuizPage() {
     }
   }
 
-  function submitAnswer(option: string) {
+  function submitAnswer(answer: AnswerKey) {
     const newAnswers = [...answers];
-    newAnswers[currentQuestion] = option;
+    newAnswers[currentQuestion] = answer;
     setAnswers(newAnswers);
   }
 
@@ -425,12 +401,13 @@ export default function QuizPage() {
   // ── Results screen ─────────────────────────────────────────────────────────
   if (quizEnded) {
     const pct = Math.round((score / questions.length) * 100);
+    const safePct = Math.min(100, Math.max(0, pct || 0));
+
     return (
       <main
         className="relative min-h-screen overflow-x-hidden p-8"
         style={{ background: "#0a0a0a" }}
       >
-        <Background />
         <div className="relative max-w-3xl mx-auto" style={{ zIndex: 10 }}>
           {/* Header */}
           <div
@@ -449,6 +426,7 @@ export default function QuizPage() {
               >
                 QuizRush — Results
               </div>
+
               <h1
                 style={{
                   fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
@@ -458,12 +436,17 @@ export default function QuizPage() {
                 }}
               >
                 Quiz{" "}
-                <span style={{ color: "#ea781e", fontStyle: "italic" }}>
+                <span
+                  style={{
+                    color: "#ea781e",
+                    fontStyle: "italic",
+                  }}
+                >
                   Finished
-                </span>{" "}
-                🎉
+                </span>
               </h1>
             </div>
+
             <button
               onClick={() => router.push("/home")}
               style={{
@@ -493,7 +476,7 @@ export default function QuizPage() {
                   "translateY(0)";
               }}
             >
-              <Home size={14} /> Back to Home
+              Back to Home
             </button>
           </div>
 
@@ -528,6 +511,7 @@ export default function QuizPage() {
             >
               <Trophy size={32} color="#fff" />
             </div>
+
             <p
               style={{
                 color: "#ea781e",
@@ -543,6 +527,7 @@ export default function QuizPage() {
                 /{questions.length}
               </span>
             </p>
+
             <p
               style={{
                 color: "rgba(245,240,232,.5)",
@@ -551,11 +536,11 @@ export default function QuizPage() {
                 marginTop: 8,
               }}
             >
-              {pct >= 80
-                ? "🔥 Excellent!"
-                : pct >= 50
-                  ? "👍 Good effort!"
-                  : "💪 Keep practising!"}
+              {safePct >= 80
+                ? "Excellent!"
+                : safePct >= 50
+                  ? "Good effort!"
+                  : "Keep practising!"}
             </p>
 
             {/* Score bar */}
@@ -571,14 +556,19 @@ export default function QuizPage() {
               <div
                 style={{
                   height: "100%",
-                  width: `${pct}%`,
+                  width: `${safePct}%`,
                   background:
-                    pct >= 80 ? "#3B6D11" : pct >= 50 ? "#ea781e" : "#A32D2D",
+                    safePct >= 80
+                      ? "#3B6D11"
+                      : safePct >= 50
+                        ? "#ea781e"
+                        : "#A32D2D",
                   borderRadius: 2,
                   transition: "width 1s ease",
                 }}
               />
             </div>
+
             <p
               style={{
                 color: "rgba(245,240,232,.3)",
@@ -586,7 +576,7 @@ export default function QuizPage() {
                 marginTop: 6,
               }}
             >
-              {pct}% correct
+              {safePct}% correct
             </p>
           </div>
 
@@ -602,93 +592,105 @@ export default function QuizPage() {
           >
             Answer Review
           </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {questions.map((q, index) => (
-              <div
-                key={index}
-                style={{
-                  borderRadius: 14,
-                  background: "rgba(13,13,13,.88)",
-                  border: "0.5px solid rgba(234,120,30,.15)",
-                  padding: "1.25rem 1.5rem",
-                }}
-              >
-                <p
+            {questions?.map((q, index) => {
+              const userAnswer = answers?.[index];
+
+              return (
+                <div
+                  key={index}
                   style={{
-                    color: "#f5f0e8",
-                    fontSize: 14,
-                    fontFamily: "Georgia, serif",
-                    marginBottom: 12,
+                    borderRadius: 14,
+                    background: "rgba(13,13,13,.88)",
+                    border: "0.5px solid rgba(234,120,30,.15)",
+                    padding: "1.25rem 1.5rem",
                   }}
                 >
-                  <span
-                    style={{ color: "rgba(245,240,232,.35)", marginRight: 8 }}
+                  <p
+                    style={{
+                      color: "#f5f0e8",
+                      fontSize: 14,
+                      fontFamily: "Georgia, serif",
+                      marginBottom: 12,
+                    }}
                   >
-                    {index + 1}.
-                  </span>
-                  {q.question}
-                </p>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                >
-                  {[
-                    { key: "optionA", value: q.optionA },
-                    { key: "optionB", value: q.optionB },
-                    { key: "optionC", value: q.optionC },
-                    { key: "optionD", value: q.optionD },
-                  ].map((option) => {
-                    const isCorrect = option.key === q.answer;
-                    const isWrong = option.key === answers[index] && !isCorrect;
+                    <span
+                      style={{ color: "rgba(245,240,232,.35)", marginRight: 8 }}
+                    >
+                      {index + 1}.
+                    </span>
+                    {q.question}
+                  </p>
 
-                    return (
-                      <div
-                        key={option.key}
-                        style={{
-                          padding: "9px 14px",
-                          borderRadius: 8,
-                          fontSize: 13,
-                          fontFamily: "Georgia, serif",
-                          background: isCorrect
-                            ? "rgba(59,109,17,.18)"
-                            : isWrong
-                              ? "rgba(163,45,45,.15)"
-                              : "rgba(245,240,232,.03)",
-                          border: `0.5px solid ${
-                            isCorrect
-                              ? "#3B6D11"
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  >
+                    {[
+                      {
+                        key: "optionA",
+                        value: questions[currentQuestion].optionA,
+                      },
+                      {
+                        key: "optionB",
+                        value: questions[currentQuestion].optionB,
+                      },
+                      {
+                        key: "optionC",
+                        value: questions[currentQuestion].optionC,
+                      },
+                      {
+                        key: "optionD",
+                        value: questions[currentQuestion].optionD,
+                      },
+                    ].map((option, i) => {
+                      const isCorrect = option.key === q.answer;
+
+                      const selectedKey = answers[index];
+
+                      const isWrong =
+                        selectedKey === option.key && selectedKey !== q.answer;
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            padding: "9px 14px",
+                            borderRadius: 8,
+                            background: isCorrect
+                              ? "rgba(59,109,17,.18)"
                               : isWrong
-                                ? "#A32D2D"
-                                : "rgba(245,240,232,.08)"
-                          }`,
-                          color: isCorrect
-                            ? "#97C459"
-                            : isWrong
-                              ? "#F09595"
-                              : "rgba(245,240,232,.45)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        {option.value}
-                        {isCorrect && (
-                          <span style={{ fontSize: 11 }}>✓ Correct</span>
-                        )}
-                        {isWrong && (
-                          <span style={{ fontSize: 11 }}>✗ Wrong</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                                ? "rgba(163,45,45,.15)"
+                                : "transparent",
+                            border: `0.5px solid ${
+                              isCorrect
+                                ? "#3B6D11"
+                                : isWrong
+                                  ? "#A32D2D"
+                                  : "rgba(255,255,255,.1)"
+                            }`,
+                            color: isCorrect
+                              ? "#97C459"
+                              : isWrong
+                                ? "#F09595"
+                                : "#ccc",
+                          }}
+                        >
+                          {option.key}
+
+                          {isCorrect && " ✓ Correct"}
+                          {isWrong && " ✗ Wrong"}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
     );
   }
-
   // ── Active quiz screen ─────────────────────────────────────────────────────
 
   if (!questions.length) {
@@ -1161,16 +1163,18 @@ export default function QuizPage() {
           {/* Options */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[
-              questions[currentQuestion].optionA,
-              questions[currentQuestion].optionB,
-              questions[currentQuestion].optionC,
-              questions[currentQuestion].optionD,
-            ].map((option: string, i: number) => {
-              const selected = answers[currentQuestion] === option;
+              { key: "optionA", value: questions[currentQuestion].optionA },
+              { key: "optionB", value: questions[currentQuestion].optionB },
+              { key: "optionC", value: questions[currentQuestion].optionC },
+              { key: "optionD", value: questions[currentQuestion].optionD },
+            ].map((option, i) => {
+              const selected =
+                answers[currentQuestion] === (option.key as AnswerKey);
+
               return (
                 <button
-                  key={option}
-                  onClick={() => submitAnswer(option)}
+                  key={option.key}
+                  onClick={() => submitAnswer(option.key as AnswerKey)}
                   style={{
                     width: "100%",
                     padding: "13px 16px",
@@ -1193,26 +1197,7 @@ export default function QuizPage() {
                       ? "0 0 0 3px rgba(234,120,30,.08)"
                       : "none",
                   }}
-                  onMouseEnter={(e) => {
-                    if (selected) return;
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(234,120,30,.35)";
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(234,120,30,.06)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "#f5f0e8";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selected) return;
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(245,240,232,.08)";
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "#111";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "rgba(245,240,232,.65)";
-                  }}
                 >
-                  {/* Letter badge */}
                   <span
                     style={{
                       width: 26,
@@ -1230,12 +1215,12 @@ export default function QuizPage() {
                       fontSize: 11,
                       color: selected ? "#fff" : "rgba(245,240,232,.4)",
                       flexShrink: 0,
-                      transition: "background .15s",
                     }}
                   >
                     {["A", "B", "C", "D"][i]}
                   </span>
-                  {option}
+
+                  {option.value}
                 </button>
               );
             })}

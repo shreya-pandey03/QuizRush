@@ -5,11 +5,21 @@ export type Player = {
   answered: boolean;
 };
 
+export type AnswerKey =
+  | "optionA"
+  | "optionB"
+  | "optionC"
+  | "optionD";
+
 export type Question = {
-  id: string;
   question: string;
-  options: string[];
-  answer: string;
+
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+
+  answer: AnswerKey;
 };
 
 export type LobbyState = {

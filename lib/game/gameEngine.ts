@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import { timers } from "./timers";
-import  {gameStore } from "./gameStore";
+import { gameStore } from "@/lib/socket/gameStore";
+
+
 
 export function startGame(io: Server, lobbyId: string) {
   const lobby = gameStore.get(lobbyId);
@@ -8,13 +10,10 @@ export function startGame(io: Server, lobbyId: string) {
   if (!lobby) return;
 
   lobby.started = true;
-
   lobby.status = "playing";
-
   lobby.currentQuestionIndex = 0;
 
   sendQuestion(io, lobbyId);
-
   startTimer(io, lobbyId);
 }
 
@@ -23,19 +22,29 @@ export function sendQuestion(io: Server, lobbyId: string) {
 
   if (!lobby) return;
 
-  const question = lobby.questions[lobby.currentQuestionIndex];
+  const question =
+    lobby.questions[lobby.currentQuestionIndex];
+
+  if (!question) return;
 
   io.to(lobbyId).emit("new-question", {
     question: {
-      id: question.id,
       question: question.question,
-      options: question.options,
+
+      optionA: question.optionA,
+      optionB: question.optionB,
+      optionC: question.optionC,
+      optionD: question.optionD,
+
+      answer: question.answer,
     },
-    index: lobby.currentQuestionIndex,
   });
 }
 
-export function startTimer(io: Server, lobbyId: string) {
+export function startTimer(
+  io: Server,
+  lobbyId: string,
+) {
   const lobby = gameStore.get(lobbyId);
 
   if (!lobby) return;
@@ -49,13 +58,21 @@ export function startTimer(io: Server, lobbyId: string) {
   lobby.timer = 15;
 
   const interval = setInterval(() => {
-    lobby.timer--;
+    const currentLobby =
+      gameStore.get(lobbyId);
+
+    if (!currentLobby) {
+      clearInterval(interval);
+      return;
+    }
+
+    currentLobby.timer--;
 
     io.to(lobbyId).emit("timer-update", {
-      timeLeft: lobby.timer,
+      timeLeft: currentLobby.timer,
     });
 
-    if (lobby.timer <= 0) {
+    if (currentLobby.timer <= 0) {
       clearInterval(interval);
 
       timers.delete(lobbyId);
@@ -67,24 +84,32 @@ export function startTimer(io: Server, lobbyId: string) {
   timers.set(lobbyId, interval);
 }
 
-export function nextQuestion(io: Server, lobbyId: string) {
+export function nextQuestion(
+  io: Server,
+  lobbyId: string,
+) {
   const lobby = gameStore.get(lobbyId);
 
   if (!lobby) return;
 
   lobby.currentQuestionIndex++;
 
-  if (lobby.currentQuestionIndex >= lobby.questions.length) {
+  if (
+    lobby.currentQuestionIndex >=
+    lobby.questions.length
+  ) {
     lobby.status = "finished";
 
     io.to(lobbyId).emit("quiz-ended", {
-      leaderboard: lobby.players.sort((a, b) => b.score - a.score),
+      leaderboard: [...lobby.players].sort(
+        (a, b) => b.score - a.score,
+      ),
     });
 
     return;
   }
 
-  lobby.players.forEach((player) => {
+  lobby.players.forEach((player: { answered: boolean; })=> {
     player.answered = false;
   });
 
