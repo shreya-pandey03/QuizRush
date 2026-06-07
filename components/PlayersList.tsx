@@ -1,9 +1,7 @@
-"use client";
-
 import { useLobbyStore } from "@/store/lobbyStore";
 
 export default function PlayersList() {
-  const players = useLobbyStore((s) => s.players);
+  const players = useLobbyStore((s) => s.players ?? []);
 
   const sortedPlayers = [...players].sort(
     (a, b) => b.score - a.score
@@ -11,9 +9,7 @@ export default function PlayersList() {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold text-white">
-        👥 Online Players
-      </h2>
+      {/* <h3> Online Players</h3> */}
 
       {sortedPlayers.length === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-700 p-4 text-center text-neutral-400">

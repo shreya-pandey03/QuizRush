@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/drizzle/src/db";
 import { questions } from "@/drizzle/src/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
+import { gameStore } from "@/lib/socket/gameStore";
 
 export async function GET(req: NextRequest) {
   const lobbyId = req.nextUrl.searchParams.get("lobbyId");
@@ -13,12 +14,25 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  //   PRIORITY: GAME STORE (LIVE STATE)
+  const lobby = gameStore.get(lobbyId);
+
+  if (lobby?.questions?.length) {
+    return NextResponse.json({
+      questions: lobby.questions,
+      source: "memory",
+    });
+  }
+
+  //   FALLBACK: DATABASE ONLY IF GAME NOT RUNNING
   const data = await db
     .select()
     .from(questions)
-    .where(eq(questions.lobbyId, lobbyId));
+    .where(eq(questions.lobbyId, lobbyId))
+    .orderBy(asc(questions.questionNumber));
 
   return NextResponse.json({
     questions: data,
+    source: "db",
   });
 }

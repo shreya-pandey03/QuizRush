@@ -1,42 +1,42 @@
-import { db } from "@/drizzle/src/db";
-import {questions } from "@/drizzle/src/db/schema";
+// import { db } from "@/drizzle/src/db";
+// import {questions } from "@/drizzle/src/db/schema";
 
 
-async function seed() {
-  await db
-    .insert(questions)
+// async function seed() {
+//   await db
+//     .insert(questions)
 
-    .values([
-      {
-        question: "What is React?",
+//     .values([
+//       {
+//         question: "What is React?",
 
-        optionA: "Library",
+//         optionA: "Library",
 
-        optionB: "Database",
+//         optionB: "Database",
 
-        optionC: "Server",
+//         optionC: "Server",
 
-        optionD: "Language",
+//         optionD: "Language",
 
-        answer: "Library",
-      },
+//         answer: "Library",
+//       },
 
-      {
-        question: "What is Next.js?",
+//       {
+//         question: "What is Next.js?",
 
-        optionA: "Framework",
+//         optionA: "Framework",
 
-        optionB: "Database",
+//         optionB: "Database",
 
-        optionC: "Browser",
+//         optionC: "Browser",
 
-        optionD: "OS",
+//         optionD: "OS",
 
-        answer: "Framework",
-      },
-    ]);
+//         answer: "Framework",
+//       },
+//     ]);
 
-  console.log("Questions Seeded");
-}
+//   console.log("Questions Seeded");
+// }
 
-seed();
+// seed();

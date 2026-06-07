@@ -1,36 +1,19 @@
-"use client"
+"use client";
 
-export default function ResultModal(){
+type ResultModalProps = {
+  score: number;
+  total: number;
+};
 
-return(
-
-<div
-className="
-fixed
-top-0
-left-0
-w-full
-h-full
-flex
-items-center
-justify-center
-"
->
-
-<div
-className="
-bg-gray-400
-p-6
-rounded
-"
->
-
-Quiz Complete
-
-</div>
-
-</div>
-
-)
-
+export default function ResultModal({
+  score,
+  total,
+}: ResultModalProps) {
+  return (
+    <div>
+      <div>
+        Score: {score}/{total}
+      </div>
+    </div>
+  );
 }

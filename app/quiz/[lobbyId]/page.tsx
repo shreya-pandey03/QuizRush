@@ -37,13 +37,15 @@ export default function QuizPage() {
     async function loadQuestions() {
       try {
         const res = await fetch(`/api/questions?lobbyId=${roomId}`);
-
         const data = await res.json();
 
         console.log("QUESTIONS FROM API:", data);
 
-        setQuestions(data.questions || []);
-        console.log("API QUESTIONS:", data.questions);
+        const qs = data.questions || [];
+
+        setQuestions(qs);
+
+        console.log("API QUESTIONS:", qs);
       } catch (err) {
         console.error("LOAD QUESTIONS ERROR:", err);
       }
@@ -65,58 +67,13 @@ export default function QuizPage() {
     };
   }, []);
 
-  // const questions = [
-  //   {
-  //     question: "What is the capital of India?",
-  //     options: ["Mumbai", "Delhi", "Chennai", "Kolkata"],
-  //     answer: "Delhi",
-  //   },
-  //   { question: "2 + 2 = ?", options: ["2", "4", "8", "10"], answer: "4" },
-  //   {
-  //     question: "Largest planet?",
-  //     options: ["Earth", "Mars", "Jupiter", "Venus"],
-  //     answer: "Jupiter",
-  //   },
-  //   {
-  //     question: "HTML stands for?",
-  //     options: [
-  //       "Hyper Text Markup Language",
-  //       "Home Tool Markup Language",
-  //       "Hyper Tool",
-  //       "Markup Text",
-  //     ],
-  //     answer: "Hyper Text Markup Language",
-  //   },
-  //   {
-  //     question: "React created by?",
-  //     options: ["Google", "Meta", "Microsoft", "Netflix"],
-  //     answer: "Meta",
-  //   },
-  //   { question: "5 × 6 = ?", options: ["30", "40", "20", "10"], answer: "30" },
-  //   {
-  //     question: "Fastest animal?",
-  //     options: ["Lion", "Tiger", "Cheetah", "Elephant"],
-  //     answer: "Cheetah",
-  //   },
-  //   {
-  //     question: "CSS used for?",
-  //     options: ["Database", "Styling", "Backend", "Authentication"],
-  //     answer: "Styling",
-  //   },
-  // ];
-
   const [currentQuestion, setCurrentQuestion] = useState(0);
-
-  // const [answers, setAnswers] = useState<string[]>(
-  //   Array(questions.length).fill(""),
-  // );
-
   const [answers, setAnswers] = useState<AnswerKey[]>([]);
-
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizEnded, setQuizEnded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const q = questions[currentQuestion];
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -162,7 +119,7 @@ export default function QuizPage() {
 
         if (data?.id) {
           setCurrentQuestion(data.currentQuestion ?? 0);
-          setAnswers(data.answers ?? Array(questions.length).fill(""));
+          setAnswers(data.answers ?? Array(questions.length).fill(null));
           setScore(data.score ?? 0);
           setQuizEnded(data.quizEnded ?? false);
         }
@@ -211,6 +168,8 @@ export default function QuizPage() {
     let finalScore = 0;
 
     answers.forEach((answer, index) => {
+      if (!answer) return;
+
       if (answer === questions[index].answer) {
         finalScore++;
       }
@@ -241,129 +200,133 @@ export default function QuizPage() {
   }
 
   // ── Background layers (shared) ─────────────────────────────────────────────
-  const Background = () => (
-    <>
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
-          backgroundSize: "48px 48px",
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)",
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed bottom-0 right-0 pointer-events-none"
-        style={{
-          width: 420,
-          height: 420,
-          borderRadius: "50%",
-          background: "rgba(234,120,30,.07)",
-          filter: "blur(100px)",
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed left-0 right-0 pointer-events-none"
-        style={{
-          height: 2,
-          background:
-            "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)",
-          animation: "qrScan 6s linear infinite",
-          zIndex: 1,
-        }}
-      />
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          top: "18%",
-          left: "4%",
-          width: 76,
-          height: 76,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-          boxShadow:
-            "0 0 0 1px rgba(234,120,30,.3), 0 0 34px rgba(234,120,30,.18)",
-          animation: "floatA 8s ease-in-out infinite",
-          opacity: 0.42,
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          top: "58%",
-          right: "4%",
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-          animation: "floatB 10s ease-in-out infinite",
-          opacity: 0.38,
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          bottom: "18%",
-          left: "8%",
-          width: 26,
-          height: 26,
-          borderRadius: "50%",
-          background: "#1a0a03",
-          border: "1px solid rgba(234,120,30,.4)",
-          animation: "floatC 6s ease-in-out infinite",
-          opacity: 0.5,
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          top: "6%",
-          left: "2%",
-          width: 100,
-          height: 100,
-          borderRadius: "50%",
-          border: "0.5px solid rgba(234,120,30,.14)",
-          animation: "spinRing 22s linear infinite",
-          zIndex: 0,
-        }}
-      />
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          bottom: "8%",
-          right: "3%",
-          width: 64,
-          height: 64,
-          borderRadius: "50%",
-          border: "0.5px solid rgba(234,120,30,.11)",
-          animation: "spinRing 16s linear infinite reverse",
-          zIndex: 0,
-        }}
-      />
-      <style>{`
-        @keyframes qrScan   { 0%{top:-2%} 100%{top:102%} }
-        @keyframes qrBlink  { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes floatA   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
-        @keyframes floatB   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
-        @keyframes floatC   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes spinRing { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        @keyframes timerShrink { 0%{width:100%} 100%{width:0%} }
-      `}</style>
-    </>
-  );
+const Background = () => (
+  <>
+    {/* Grid */}
+    <div
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
+        backgroundSize: "48px 48px",
+        zIndex: 0,
+      }}
+    />
+
+    {/* Top radial glow */}
+    <div
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        background: "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)",
+        zIndex: 0,
+      }}
+    />
+
+    {/* Bottom-right glow */}
+    <div
+      className="fixed bottom-0 right-0 pointer-events-none"
+      style={{
+        width: 420,
+        height: 420,
+        borderRadius: "50%",
+        background: "rgba(234,120,30,.07)",
+        filter: "blur(100px)",
+        zIndex: 0,
+      }}
+    />
+
+    {/* Scanline — only ONE, with top: 0 */}
+    <div
+      className="fixed left-0 right-0 pointer-events-none"
+      style={{
+        height: 2,
+        top: 0,
+        background: "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)",
+        animation: "qrScan 6s linear infinite",
+        zIndex: 1,
+      }}
+    />
+
+    {/* Orb 1 — large glowing */}
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        top: "18%", left: "4%",
+        width: 76, height: 76,
+        borderRadius: "50%",
+        background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
+        boxShadow: "0 0 0 1px rgba(234,120,30,.3), 0 0 34px rgba(234,120,30,.18)",
+        animation: "floatA 8s ease-in-out infinite",
+        opacity: 0.42,
+        zIndex: 0,
+      }}
+    />
+
+    {/* Orb 2 — small glowing */}
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        top: "58%", right: "4%",
+        width: 48, height: 48,
+        borderRadius: "50%",
+        background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
+        animation: "floatB 10s ease-in-out infinite",
+        opacity: 0.38,
+        zIndex: 0,
+      }}
+    />
+
+    {/* Orb 3 — small dark */}
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        bottom: "18%", left: "8%",
+        width: 26, height: 26,
+        borderRadius: "50%",
+        background: "#1a0a03",
+        border: "1px solid rgba(234,120,30,.4)",
+        animation: "floatC 6s ease-in-out infinite",
+        opacity: 0.5,
+        zIndex: 0,
+      }}
+    />
+
+    {/* Ring 1 */}
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        top: "6%", left: "2%",
+        width: 100, height: 100,
+        borderRadius: "50%",
+        border: "0.5px solid rgba(234,120,30,.14)",
+        animation: "spinRing 22s linear infinite",
+        zIndex: 0,
+      }}
+    />
+
+    {/* Ring 2 */}
+    <div
+      className="fixed pointer-events-none"
+      style={{
+        bottom: "8%", right: "3%",
+        width: 64, height: 64,
+        borderRadius: "50%",
+        border: "0.5px solid rgba(234,120,30,.11)",
+        animation: "spinRing 16s linear infinite reverse",
+        zIndex: 0,
+      }}
+    />
+
+    <style>{`
+      @keyframes qrScan    { 0%{top:-2%} 100%{top:102%} }
+      @keyframes qrBlink   { 0%,100%{opacity:1} 50%{opacity:0} }
+      @keyframes floatA    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+      @keyframes floatB    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+      @keyframes floatC    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+      @keyframes spinRing  { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+      @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+    `}</style>
+  </>
+);
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -594,8 +557,8 @@ export default function QuizPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {questions?.map((q, index) => {
-              const userAnswer = answers?.[index];
+            {questions.map((q, index) => {
+              const userAnswer = answers[index];
 
               return (
                 <div
@@ -1022,7 +985,6 @@ export default function QuizPage() {
               <span style={{ color: "#ea781e", fontStyle: "italic" }}>
                 Started
               </span>{" "}
-              🚀
             </h1>
           </div>
 
@@ -1105,7 +1067,6 @@ export default function QuizPage() {
               {answers.filter(Boolean).length} answered
             </span>
           </div>
-
           {/* Timer bar */}
           <div
             style={{
@@ -1126,7 +1087,6 @@ export default function QuizPage() {
               }}
             />
           </div>
-
           {/* Question */}
           <div
             style={{
@@ -1159,17 +1119,20 @@ export default function QuizPage() {
               {questions[currentQuestion].question}
             </p>
           </div>
-
           {/* Options */}
+
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[
-              { key: "optionA", value: questions[currentQuestion].optionA },
-              { key: "optionB", value: questions[currentQuestion].optionB },
-              { key: "optionC", value: questions[currentQuestion].optionC },
-              { key: "optionD", value: questions[currentQuestion].optionD },
+              { key: "optionA", value: q.optionA },
+              { key: "optionB", value: q.optionB },
+              { key: "optionC", value: q.optionC },
+              { key: "optionD", value: q.optionD },
             ].map((option, i) => {
-              const selected =
-                answers[currentQuestion] === (option.key as AnswerKey);
+              const selectedKey = answers[currentQuestion];
+
+              const isSelected = selectedKey === option.key;
+              const isCorrect = option.key === q.answer;
+              const isWrong = isSelected && option.key !== q.answer;
 
               return (
                 <button
@@ -1180,22 +1143,38 @@ export default function QuizPage() {
                     padding: "13px 16px",
                     borderRadius: 10,
                     textAlign: "left",
-                    background: selected ? "rgba(234,120,30,.15)" : "#111",
-                    border: selected
+
+                    background: isSelected
+                      ? "rgba(234,120,30,.15)"
+                      : isCorrect && quizEnded
+                        ? "rgba(59,109,17,.18)"
+                        : isWrong && quizEnded
+                          ? "rgba(163,45,45,.15)"
+                          : "#111",
+
+                    border: isSelected
                       ? "0.5px solid rgba(234,120,30,.6)"
-                      : "0.5px solid rgba(245,240,232,.08)",
-                    color: selected ? "#f5f0e8" : "rgba(245,240,232,.65)",
+                      : isCorrect && quizEnded
+                        ? "0.5px solid #3B6D11"
+                        : isWrong && quizEnded
+                          ? "0.5px solid #A32D2D"
+                          : "0.5px solid rgba(245,240,232,.08)",
+
+                    color: isSelected
+                      ? "#f5f0e8"
+                      : isCorrect && quizEnded
+                        ? "#97C459"
+                        : isWrong && quizEnded
+                          ? "#F09595"
+                          : "rgba(245,240,232,.65)",
+
                     fontSize: 14,
                     fontFamily: "Georgia, serif",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
-                    transition:
-                      "background .15s, border-color .15s, color .15s",
-                    boxShadow: selected
-                      ? "0 0 0 3px rgba(234,120,30,.08)"
-                      : "none",
+                    transition: "all .15s",
                   }}
                 >
                   <span
@@ -1203,17 +1182,22 @@ export default function QuizPage() {
                       width: 26,
                       height: 26,
                       borderRadius: 6,
-                      background: selected
+                      background: isSelected
                         ? "#ea781e"
-                        : "rgba(245,240,232,.06)",
-                      border: selected
-                        ? "none"
-                        : "0.5px solid rgba(245,240,232,.1)",
+                        : isCorrect && quizEnded
+                          ? "#3B6D11"
+                          : "rgba(245,240,232,.06)",
+
+                      border:
+                        isSelected || (isCorrect && quizEnded)
+                          ? "none"
+                          : "0.5px solid rgba(245,240,232,.1)",
+
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 11,
-                      color: selected ? "#fff" : "rgba(245,240,232,.4)",
+                      color: "#fff",
                       flexShrink: 0,
                     }}
                   >

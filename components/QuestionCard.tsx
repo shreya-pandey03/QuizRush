@@ -18,13 +18,15 @@ export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
   const playerId = (session?.user as any)?.id;
 
   const submitAnswer = (option: string) => {
+    if (!playerId) return;
+
     setSelected(option);
 
     socket.emit("submit-answer", {
       lobbyId,
       playerId,
       questionIndex: currentIndex,
-      answer: option, // VALUE not key
+      answer: option,
     });
   };
 
@@ -36,26 +38,49 @@ export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
   ];
 
   return (
-    <div>
-      <h2>{question.question}</h2>
+    <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-950 p-5 space-y-4">
+      {/* Question */}
+      <h2 className="text-lg font-bold text-white leading-snug">
+        {question.question}
+      </h2>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {options.map((opt, i) => {
-          const isSelected = selected === opt;
-
+      {/* Options */}
+      <div className="flex flex-col gap-3">
+        {options.map((_opt, _i) => {
           return (
-            <button
-              key={i}
-              onClick={() => submitAnswer(opt)}
-              style={{
-                padding: 10,
-                background: isSelected ? "green" : "#111",
-                color: "white",
-              }}
-            >
-              {opt}
-              {isSelected && " ✓"}
-            </button>
+            <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-950 p-5 text-white space-y-4">
+              <div className="text-xs text-neutral-400">Lobby: {lobbyId}</div>
+
+              <h2 className="text-lg font-bold leading-snug">
+                {question.question}
+              </h2>
+
+              <div className="flex flex-col gap-3">
+                {options.map((opt, i) => {
+                  const isSelected = selected === opt;
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => submitAnswer(opt)}
+                      disabled={!!selected}
+                      className={`
+              p-3 rounded-lg text-left transition border
+              border-neutral-800
+              ${
+                isSelected
+                  ? "bg-green-600 text-white"
+                  : "bg-neutral-900 text-white hover:bg-neutral-800"
+              }
+            `}
+                    >
+                      {opt}
+                      {isSelected && " ✓"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>

@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Users, Copy, Play, Check, Crown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import QuizLobbyClient from "./QuizLobbyClient";
 import { socket } from "@/lib/socket/socket";
 
@@ -250,9 +250,7 @@ export default function LobbyRoomPage() {
         }}
       />
 
-      {/* ══════════════════════════════════════════
-          PAGE CONTENT
-      ══════════════════════════════════════════ */}
+      {/*  PAGE CONTENT*/}
       <div className="relative max-w-3xl mx-auto" style={{ zIndex: 10 }}>
         {/* Quiz Lobby Client */}
         <QuizLobbyClient lobbyId={lobbyId} />
@@ -289,7 +287,6 @@ export default function LobbyRoomPage() {
               <span style={{ color: "#ea781e", fontStyle: "italic" }}>
                 Lobby
               </span>{" "}
-              🎮
             </h1>
             <p
               style={{
@@ -425,7 +422,7 @@ export default function LobbyRoomPage() {
           </div>
 
           {/* ── Players list ── */}
-          {/* ── Players list ── */}
+         
           <div className="mt-8">
             <div
               style={{
