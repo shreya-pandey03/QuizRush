@@ -1,44 +1,33 @@
-"use client";
+type PlayerScore = {
+  playerId: string;
+  name: string;
+  score: number;
+};
 
-import { useLobbyStore } from "@/store/lobbyStore";
-
-export default function ScoreBoard() {
-  const players = useLobbyStore((s) => s.players);
-
-  const sorted = [...players].sort(
-    (a, b) => b.score - a.score
-  );
+export default function ScoreBoard({
+  leaderboard,
+}: {
+  leaderboard?: PlayerScore[];
+}) {
+  const safeLeaderboard = leaderboard ?? [];
 
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
-      <h2 className="mb-4 text-xl font-bold text-white">
-        🏆 Leaderboard
-      </h2>
+   <div className="w-full max-w-md mx-auto p-6 bg-gray-800 shadow-lg rounded-2xl">
+     <h2 className="text-2xl font-bold text-center mb-4"> Leaderboard</h2>
 
-      {sorted.length === 0 ? (
-        <p className="text-neutral-400">
-          No players yet
-        </p>
+      {safeLeaderboard.length === 0 ? (
+        <p className="text-gray-500">No scores yet...</p>
       ) : (
         <div className="space-y-2">
-          {sorted.map((player, index) => (
+          {safeLeaderboard.map((p, index) => (
             <div
-              key={player.id}
-              className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-3"
+              key={p.playerId}
+              className="flex justify-between p-2 border rounded"
             >
-              <div className="flex items-center gap-3">
-                <span className="w-6 text-neutral-400">
-                  #{index + 1}
-                </span>
-
-                <span className="text-white">
-                  {player.name}
-                </span>
-              </div>
-
-              <span className="font-bold text-green-400">
-                {player.score}
+              <span>
+                {index + 1}. {p.name}
               </span>
+              <span className="font-bold">{p.score}</span>
             </div>
           ))}
         </div>

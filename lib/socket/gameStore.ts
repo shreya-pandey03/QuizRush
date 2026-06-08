@@ -4,6 +4,10 @@ export type LobbyStatus = "created" | "playing" | "finished";
 
 // ONLY runtime game state (NOT DB shape)
 export type LobbyState = {
+  scores: {};
+  answers: {};
+  difficulty: any;
+  category: any;
   id: string;
   players: {
     id: string;

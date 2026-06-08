@@ -415,7 +415,7 @@ const Background = () => (
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 7,
+                gap: 4,
                 padding: "9px 20px",
                 borderRadius: 8,
                 background: "#ea781e",
@@ -441,6 +441,38 @@ const Background = () => (
             >
               Back to Home
             </button>
+            
+<button
+  onClick={() => router.push(`/lobby/${roomId}`)}
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    padding: "9px 20px",
+    borderRadius: 8,
+    background: "#0d0d0d",
+    border: "1px solid rgba(234,120,30,.3)",
+    color: "#ea781e",
+    fontSize: 13,
+    fontFamily: "Georgia, serif",
+    cursor: "pointer",
+    transition: "background .2s, transform .15s",
+  }}
+  onMouseEnter={(e) => {
+    (e.currentTarget as HTMLButtonElement).style.background =
+      "rgba(234,120,30,.12)";
+    (e.currentTarget as HTMLButtonElement).style.transform =
+      "translateY(-1px)";
+  }}
+  onMouseLeave={(e) => {
+    (e.currentTarget as HTMLButtonElement).style.background = "#0d0d0d";
+    (e.currentTarget as HTMLButtonElement).style.transform =
+      "translateY(0)";
+  }}
+>
+  View Leaderboard
+</button>
+
           </div>
 
           {/* Score card */}

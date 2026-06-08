@@ -13,6 +13,7 @@ type Lobby = {
 };
 
 type LobbyStore = {
+  id: any;
   lobby: Lobby | null;
   setLobby: (lobby: Lobby | null) => void;
 

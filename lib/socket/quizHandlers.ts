@@ -4,6 +4,7 @@ import { startTimer } from "./timers";
 import { generateQuestions } from "@/lib/ai/generateQuestions";
 import { db } from "@/drizzle/src/db";
 import { questions } from "@/drizzle/src/db/schema";
+import { eq } from "drizzle-orm";
 
 export function quizHandlers(io: Server, socket: Socket) {
   socket.on("start-quiz", async ({ lobbyId }) => {
@@ -50,18 +51,20 @@ export function quizHandlers(io: Server, socket: Socket) {
       }));
 
       // save to DB
+
+      await db.delete(questions).where(eq(questions.lobbyId, lobbyId));
+
+      await db.delete(questions).where(eq(questions.lobbyId, lobbyId));
+
       await db.insert(questions).values(
         lobby.questions.map((q, index) => ({
           lobbyId,
           questionNumber: index + 1,
-
           question: q.question,
-
           optionA: q.optionA,
           optionB: q.optionB,
           optionC: q.optionC,
           optionD: q.optionD,
-
           answer: q.answer,
         })),
       );

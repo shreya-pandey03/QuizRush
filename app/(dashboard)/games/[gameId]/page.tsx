@@ -19,6 +19,10 @@ export default function GameDetailsPage() {
         const res = await fetch("/api/results"); // or your real endpoint
         const data = await res.json();
 
+        console.log("QUESTIONS FROM API:", data);
+        console.log("API QUESTIONS:", data.questions);
+        console.log("FIRST QUESTION:", data.questions[0]);
+
         setQuestions(data.questions || []);
         setScore(data.score || 0);
       } catch (err) {
@@ -33,17 +37,13 @@ export default function GameDetailsPage() {
     <main className="p-6 text-white">
       <h1 className="text-2xl font-bold">Game Results</h1>
 
-      <p className="text-neutral-400 mt-2">
-        Review your answers and scores
-      </p>
+      <p className="text-neutral-400 mt-2">Review your answers and scores</p>
 
       {/* SCORE CARD */}
       <div className="mt-8 bg-white/[0.03] p-6 rounded-2xl border border-white/10">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-white text-xl font-semibold">
-              Final Score
-            </h2>
+            <h2 className="text-white text-xl font-semibold">Final Score</h2>
 
             <p className="text-orange-500 text-3xl font-bold mt-2">
               {score} Points
@@ -65,11 +65,7 @@ export default function GameDetailsPage() {
 
             <p className="mt-2 text-neutral-400">
               Your answer:{" "}
-              <span
-                className={
-                  q.correct ? "text-green-500" : "text-red-500"
-                }
-              >
+              <span className={q.correct ? "text-green-500" : "text-red-500"}>
                 {q.answer}
               </span>
             </p>

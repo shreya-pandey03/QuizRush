@@ -17,38 +17,51 @@ export default function useSocket({
   userId,
   playerName,
 }: SocketProps) {
-useEffect(() => {
-  if (!lobbyId || !userId) return;
+  useEffect(() => {
+    if (!lobbyId || !userId) return;
 
-  const setPlayers = useLobbyStore.getState().setPlayers;
-  const setTimeLeft = useTimerStore.getState().setTimeLeft;
-  const setQuestion = useQuizStore.getState().setQuestion;
-  const setLeaderboard = useLeaderboardStore.getState().setLeaderboard;
+    const setPlayers = useLobbyStore.getState().setPlayers;
+    const setTimeLeft = useTimerStore.getState().setTimeLeft;
+    const setQuestion = useQuizStore.getState().setQuestion;
+    const setLeaderboard = useLeaderboardStore.getState().setLeaderboard;
 
-  socket.connect();
+    socket.connect();
 
-  socket.on("connect", () => {
-    socket.emit("join-lobby", {
-      lobbyId,
-      player: {
-        id: userId,
-        name: playerName ?? "Player",
-      },
+    socket.on("connect", () => {
+      socket.emit("join-lobby", {
+        lobbyId,
+        player: {
+          id: userId,
+          name: playerName ?? "Player",
+        },
+      });
     });
-  });
 
-  socket.on("players-update", (players) => {
-    setPlayers(players);
-    setLeaderboard(players);
-  });
+    socket.on("players-update", (players) => {
+      setPlayers(players);
+      setLeaderboard(players);
+    });
 
-  socket.on("timer-update", setTimeLeft);
-  socket.on("quiz-started", setQuestion);
-  socket.on("next-question", setQuestion);
-  socket.on("leaderboard-update", setLeaderboard);
+    socket.on("timer-update", setTimeLeft);
+    socket.on("quiz-started", (questions) => {
+      console.log("QUIZ STARTED EVENT:", questions);
+      setQuestion(questions);
+    });
+    socket.on("next-question", setQuestion);
+    socket.on("leaderboard-update", setLeaderboard);
 
-  return () => {
-    socket.disconnect();
-  };
-}, [lobbyId, userId, playerName]);
+    socket.on("quiz-started", (data) => {
+      console.log("QUIZ STARTED EVENT:", data);
+      setQuestion(data);
+    });
+
+    socket.on("next-question", (data) => {
+      console.log("NEXT QUESTION EVENT:", data);
+      setQuestion(data);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [lobbyId, userId, playerName]);
 }

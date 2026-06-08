@@ -8,6 +8,8 @@ import QuestionCard from "@/components/QuestionCard";
 import ScoreBoard from "@/components/ScoreBoard";
 import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket/socket";
+import { useRouter } from "next/navigation";
+import { useQuizStore } from "@/store/quizStore";
 
 interface Props {
   lobbyId: string;
@@ -17,11 +19,20 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
   const { data: session, status } = useSession();
 
   const userId = session?.user?.email ?? "";
+const router = useRouter();
 
+const finished = useQuizStore((s) => s.finished);
   // LOCAL STATE
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<any[]>([]);
+
+  // Redirect to result page when quiz is finished
+useEffect(() => {
+  if (finished) {
+    router.push("/quiz/result");
+  }
+}, [finished, router]);
 
   // Socket connection
   useSocket({

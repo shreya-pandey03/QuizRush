@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 export default function LobbyCard({ lobby }: any) {
   const router = useRouter();
 
+console.log("LOBBY CARD:", lobby);
+
   return (
     <div
-      onClick={() => router.push(`/lobby/${lobby.id}`)}
+      onClick={() => router.push(`/lobby/${lobby.code}`)}
       className="cursor-pointer p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-orange-500 transition"
     >
       <h2 className="text-white font-bold">
