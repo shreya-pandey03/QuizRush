@@ -5,7 +5,14 @@ import { eq } from "drizzle-orm";
 
 export async function startQuiz(lobbyId: string, generatedQuestions: any[]) {
   //  CLEAN GAME STATE FIRST (MOST IMPORTANT FIX)
-  resetLobby(lobbyId);
+console.log("Generated Questions:", generatedQuestions.length);
+
+resetLobby(lobbyId);
+
+console.log(
+  "Lobby after reset:",
+  gameStore.get(lobbyId)
+);
 
   //  CLEAN OLD QUESTIONS FROM DB
   await db.delete(questions).where(eq(questions.lobbyId, lobbyId));

@@ -2,78 +2,59 @@ import { Server, Socket } from "socket.io";
 import { gameStore } from "./gameStore";
 import { startTimer } from "./timers";
 import { generateQuestions } from "@/lib/ai/generateQuestions";
-import { db } from "@/drizzle/src/db";
-import { questions } from "@/drizzle/src/db/schema";
-import { eq } from "drizzle-orm";
 
 export function quizHandlers(io: Server, socket: Socket) {
   socket.on("start-quiz", async ({ lobbyId }) => {
-    console.log("START QUIZ RECEIVED:", lobbyId);
 
-    const lobby = gameStore.get(lobbyId);
-    if (!lobby) return;
+    try {
+      
+      console.log("START QUIZ RECEIVED:", lobbyId);
 
-    console.log("LOBBY FOUND:", !!lobby);
+      const lobby = gameStore.get(lobbyId);
 
-    //  RESET STATE EVERY TIME QUIZ STARTS
-    lobby.started = false;
-    lobby.answers = {};
-    lobby.scores = {};
+      if (!lobby) {
+        console.log("LOBBY NOT FOUND");
+        return;
+      }
 
-    // prevent double start
-    if (lobby.started) {
+      if (lobby.questions.length === 0) {
+        const generatedQuestions = await generateQuestions(
+          String(lobby.category),
+          String(lobby.difficulty),
+          10,
+        );
+
+        console.log("GENERATED QUESTIONS:", generatedQuestions);
+        console.log("COUNT:", generatedQuestions?.length);
+
+        if (!generatedQuestions || generatedQuestions.length === 0) {
+          console.log("NO QUESTIONS GENERATED");
+          return;
+        }
+
+        lobby.questions = generatedQuestions;
+      }
+
+      lobby.started = true;
+
+      console.log("EMITTING quiz-started:", lobby.questions.length);
+
       io.to(lobbyId).emit("quiz-started", lobby.questions);
-      return;
+
+      startTimer(io, lobbyId);
+    } catch (error) {
+      console.error("START QUIZ ERROR:", error);
     }
+  });
 
-    // generate only once
-    if (!lobby.questions || lobby.questions.length === 0) {
-      const seed = Date.now() + Math.random();
+  socket.on("request-quiz-state", ({ lobbyId }) => {
+    const lobby = gameStore.get(lobbyId);
 
-      const generatedQuestions = await generateQuestions(
-        String(lobby.category),
-        String(lobby.difficulty),
-        10,
-        seed,
-      );
+    if (!lobby || !lobby.started) return;
 
-      lobby.questions = generatedQuestions.map((q) => ({
-        id: crypto.randomUUID(),
+    console.log("SYNCING QUIZ STATE:", lobby.questions.length);
 
-        question: q.question,
-
-        optionA: q.optionA,
-        optionB: q.optionB,
-        optionC: q.optionC,
-        optionD: q.optionD,
-
-        answer: q.answer,
-      }));
-
-      // save to DB
-
-      await db.delete(questions).where(eq(questions.lobbyId, lobbyId));
-
-      await db.delete(questions).where(eq(questions.lobbyId, lobbyId));
-
-      await db.insert(questions).values(
-        lobby.questions.map((q, index) => ({
-          lobbyId,
-          questionNumber: index + 1,
-          question: q.question,
-          optionA: q.optionA,
-          optionB: q.optionB,
-          optionC: q.optionC,
-          optionD: q.optionD,
-          answer: q.answer,
-        })),
-      );
-    }
-
-    lobby.started = true;
-
-    io.to(lobbyId).emit("quiz-started", lobby.questions);
-
-    startTimer(io, lobbyId);
+    socket.emit("quiz-started", lobby.questions);
+    socket.emit("timer-update", lobby.timer);
   });
 }

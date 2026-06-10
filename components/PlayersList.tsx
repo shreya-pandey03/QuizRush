@@ -9,8 +9,7 @@ export default function PlayersList() {
 
   return (
     <div>
-      {/* <h3> Online Players</h3> */}
-
+      
       {sortedPlayers.length === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-700 p-4 text-center text-neutral-400">
           Waiting for players...

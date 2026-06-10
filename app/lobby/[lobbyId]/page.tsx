@@ -61,19 +61,15 @@ export default function LobbyRoomPage() {
       user,
     });
 
-    const handlePlayersUpdated = (
-      updatedPlayers: {
-        id: string;
-        name: string;
-      }[],
-    ) => {
+    const handlePlayersUpdated = (updatedPlayers: any[]) => {
+      console.log("PLAYERS UPDATED:", updatedPlayers);
       setPlayers(updatedPlayers);
     };
 
-    socket.on("playersUpdated", handlePlayersUpdated);
+    socket.on("players-update", handlePlayersUpdated);
 
     return () => {
-      socket.off("playersUpdated", handlePlayersUpdated);
+      socket.off("players-update", handlePlayersUpdated);
     };
   }, [lobbyId]);
 
@@ -91,18 +87,14 @@ export default function LobbyRoomPage() {
 
   // Start quiz
   function startQuiz() {
-    if (quizStarted) return;
+    console.log("START BUTTON CLICKED");
 
-    setQuizStarted(true);
-
-    if (lobbyId) {
-      socket.emit("start-quiz", {
-        lobbyId,
-      });
-    }
-
+    socket.emit("start-quiz", {
+      lobbyId,
+    });
     router.push(`/quiz/${lobbyId}`);
   }
+
   return (
     <main
       className="relative min-h-screen overflow-x-hidden p-8"
@@ -422,7 +414,7 @@ export default function LobbyRoomPage() {
           </div>
 
           {/* ── Players list ── */}
-         
+
           <div className="mt-8">
             <div
               style={{

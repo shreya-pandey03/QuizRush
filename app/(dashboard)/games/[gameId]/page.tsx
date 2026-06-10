@@ -13,25 +13,25 @@ export default function GameDetailsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [score, setScore] = useState<number>(0);
 
-  useEffect(() => {
-    async function loadResults() {
-      try {
-        const res = await fetch("/api/results"); // or your real endpoint
-        const data = await res.json();
+  // useEffect(() => {
+  //   async function loadResults() {
+  //     try {
+  //       const res = await fetch("/api/results"); 
+  //       const data = await res.json();
 
-        console.log("QUESTIONS FROM API:", data);
-        console.log("API QUESTIONS:", data.questions);
-        console.log("FIRST QUESTION:", data.questions[0]);
+  //       console.log("QUESTIONS FROM API:", data);
+  //       console.log("API QUESTIONS:", data.questions);
+  //       console.log("FIRST QUESTION:", data.questions[0]);
 
-        setQuestions(data.questions || []);
-        setScore(data.score || 0);
-      } catch (err) {
-        console.error("Failed to load results:", err);
-      }
-    }
+  //       setQuestions(data.questions || []);
+  //       setScore(data.score || 0);
+  //     } catch (err) {
+  //       console.error("Failed to load results:", err);
+  //     }
+  //   }
 
-    loadResults();
-  }, []);
+  //   loadResults();
+  // }, []);
 
   return (
     <main className="p-6 text-white">

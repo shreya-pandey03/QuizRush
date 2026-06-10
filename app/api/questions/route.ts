@@ -25,11 +25,18 @@ export async function GET(req: NextRequest) {
   }
 
   //   FALLBACK: DATABASE ONLY IF GAME NOT RUNNING
+  
   const data = await db
     .select()
     .from(questions)
     .where(eq(questions.lobbyId, lobbyId))
     .orderBy(asc(questions.questionNumber));
+
+console.log("DB COUNT:", data.length);
+console.log(
+  data.map((q) => q.questionNumber)
+);
+
 
   return NextResponse.json({
     questions: data,

@@ -34,11 +34,12 @@ export function scoreHandlers(io: Server, socket: Socket) {
       player.answered = true;
 
       // save answer history
-      if (!lobby.answers[playerId]) {
-        lobby.answers[playerId] = [];
+      const answers = lobby.answers as Record<string, string[]>;
+      if (!answers[playerId]) {
+        answers[playerId] = [];
       }
 
-      lobby.answers[playerId].push(answer);
+      answers[playerId].push(answer);
 
       const isCorrect =
         answer === question.answer;
@@ -47,7 +48,7 @@ export function scoreHandlers(io: Server, socket: Socket) {
         player.score += 1;
       }
 
-      lobby.scores[playerId] = player.score;
+      (lobby.scores as Record<string, number>)[playerId] = player.score;
 
       // send answer result back
       socket.emit("answer-result", {

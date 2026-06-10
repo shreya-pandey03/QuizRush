@@ -18,8 +18,6 @@ export function nextQuestion(io: Server, lobbyId: string) {
   const question = lobby.questions[lobby.currentQuestionIndex];
 
   if (!question) {
-    io.to(lobbyId).emit("quiz-ended", lobby.players);
-
     return;
   }
 

@@ -9,9 +9,8 @@ type Question = {
   answer: string;
 };
 
-
-
 interface QuizStore {
+  setFinished(arg0: boolean): unknown;
   questions: Question[];
   currentIndex: number;
   question: Question | null;
@@ -69,13 +68,19 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   nextQuestion: () => {
     const { questions, currentIndex } = get();
 
+    console.log("CURRENT:", currentIndex);
+    console.log("TOTAL:", questions.length);
+
     const next = currentIndex + 1;
 
     if (next >= questions.length) {
+      console.log("QUIZ FINISHED");
+
       set({
         finished: true,
         question: null,
       });
+
       return;
     }
 

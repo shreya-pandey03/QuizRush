@@ -4,12 +4,12 @@ import { useSession } from "next-auth/react";
 import useSocket from "@/hooks/useSocket";
 import PlayersList from "@/components/PlayersList";
 import QuestionCard from "@/components/QuestionCard";
-// import QuizTimer from "@/components/QuizTimer";
 import ScoreBoard from "@/components/ScoreBoard";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { socket } from "@/lib/socket/socket";
 import { useRouter } from "next/navigation";
 import { useQuizStore } from "@/store/quizStore";
+import { useLeaderboardStore } from "@/store/leaderboardStore";
 
 interface Props {
   lobbyId: string;
@@ -19,29 +19,30 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
   const { data: session, status } = useSession();
 
   const userId = session?.user?.email ?? "";
-const router = useRouter();
-
-const finished = useQuizStore((s) => s.finished);
+  const router = useRouter();
+  const finished = useQuizStore((s) => s.finished);
   // LOCAL STATE
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<any[]>([]);
 
+  const leaderboard = useLeaderboardStore((state) => state.leaderboard);
+
+  const [quizStarted, setQuizStarted] = useState(false);
+
   // Redirect to result page when quiz is finished
 useEffect(() => {
   if (finished) {
-    router.push("/quiz/result");
+    router.replace("/quiz/result");
   }
-}, [finished, router]);
+}, [finished]);
 
   // Socket connection
   useSocket({
     lobbyId,
     userId: status === "authenticated" ? userId : "",
     playerName:
-      status === "authenticated"
-        ? (session?.user?.name ?? "Player")
-        : "",
+      status === "authenticated" ? (session?.user?.name ?? "Player") : "",
   });
 
   // Reset handler
@@ -52,10 +53,11 @@ useEffect(() => {
       setAnswers([]);
     };
 
-    socket.on("quiz-reset", handleReset);
+    socket.off("quiz-reset", handleReset); // prevent duplicates
+    socket.on("quiz-reset", handleReset); // Listen for quiz reset events
 
     return () => {
-      socket.off("quiz-reset", handleReset);
+      socket.off("quiz-reset", handleReset); // Clean up the event listener on unmount
     };
   }, []);
 
@@ -76,10 +78,14 @@ useEffect(() => {
 
   return (
     <div className="space-y-6 p-6">
-      <PlayersList />
-      {/* <QuizTimer /> */}
-      <ScoreBoard />
-      <QuestionCard lobbyId={lobbyId} />
+      {!quizStarted ? (
+        <>
+          <PlayersList />
+          <ScoreBoard leaderboard={leaderboard} />
+        </>
+      ) : (
+        <QuestionCard lobbyId={lobbyId} />
+      )}
     </div>
   );
 }

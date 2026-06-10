@@ -22,21 +22,21 @@ export type Question = {
   answer: AnswerKey;
 };
 
-export type LobbyState = {
-  lobbyId: string;
+// export type LobbyState = {
+//   lobbyId: string;
 
-  players: Player[];
+//   players: Player[];
 
-  questions: Question[];
+//   questions: Question[];
 
-  currentQuestionIndex: number;
+//   currentQuestionIndex: number;
 
-  started: boolean;
+//   started: boolean;
 
-  timer: number;
+//   timer: number;
 
-  status:
-    | "waiting"
-    | "playing"
-    | "finished";
-};
+//   status:
+//     | "waiting"
+//     | "playing"
+//     | "finished";
+// };

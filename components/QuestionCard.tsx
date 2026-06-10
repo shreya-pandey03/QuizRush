@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useQuizStore } from "@/store/quizStore";
 import { socket } from "@/lib/socket/socket";
+import loading from "@/app/lobby/[lobbyId]/loading";
+import { questions } from "@/drizzle/src/db/schema";
 
 export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
   const { data: session } = useSession();
@@ -13,24 +15,23 @@ export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
 
   const [selected, setSelected] = useState<string | null>(null);
 
+  
   if (!question) return null;
 
   console.log("QUESTION IN CARD:", question);
 
   const playerId = (session?.user as any)?.id;
 
-  const submitAnswer = (option: string) => {
-    if (!playerId) return;
+const submitAnswer = (option: string) => {
+  console.log("SUBMITTING:", option);
 
-    setSelected(option);
-
-    socket.emit("submit-answer", {
-      lobbyId,
-      playerId,
-      questionIndex: currentIndex,
-      answer: option,
-    });
-  };
+  socket.emit("submit-answer", {
+    lobbyId,
+    playerId,
+    questionIndex: currentIndex,
+    answer: option,
+  });
+};
 
   const options = [
     question.optionA,
@@ -38,6 +39,11 @@ export default function QuestionCard({ lobbyId }: { lobbyId: string }) {
     question.optionC,
     question.optionD,
   ];
+
+// console.log("RENDER CHECK");
+// console.log("loading =", loading);
+// console.log("questions =", questions);
+
 
   return (
     <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-950 p-5 text-white space-y-4">

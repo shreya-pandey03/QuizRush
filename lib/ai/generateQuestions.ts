@@ -62,9 +62,17 @@ Do NOT return the actual answer text.
       .replace(/```/g, "")
       .trim();
 
-    const parsed = JSON.parse(cleaned);
+    let parsed;
+
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      throw new Error("Invalid JSON from Gemini");
+    }
 
     console.log("AI QUESTIONS:", parsed);
+
+    console.log("GENERATED QUESTIONS COUNT:", parsed.length);
 
     return parsed.map((q: any) => ({
       question: q.question,
@@ -92,6 +100,70 @@ Do NOT return the actual answer text.
         optionB: "3",
         optionC: "4",
         optionD: "5",
+        answer: "optionC",
+      },
+      {
+        question: "Which planet is known as the Red Planet?",
+        optionA: "Earth",
+        optionB: "Mars",
+        optionC: "Venus",
+        optionD: "Jupiter",
+        answer: "optionB",
+      },
+      {
+        question: "How many days are in a week?",
+        optionA: "5",
+        optionB: "6",
+        optionC: "7",
+        optionD: "8",
+        answer: "optionC",
+      },
+      {
+        question: "Which animal is called King of the Jungle?",
+        optionA: "Tiger",
+        optionB: "Lion",
+        optionC: "Elephant",
+        optionD: "Bear",
+        answer: "optionB",
+      },
+      {
+        question: "What color do you get from blue + yellow?",
+        optionA: "Purple",
+        optionB: "Orange",
+        optionC: "Green",
+        optionD: "Red",
+        answer: "optionC",
+      },
+      {
+        question: "What is H2O?",
+        optionA: "Oxygen",
+        optionB: "Water",
+        optionC: "Hydrogen",
+        optionD: "Salt",
+        answer: "optionB",
+      },
+      {
+        question: "Which ocean is largest?",
+        optionA: "Atlantic",
+        optionB: "Indian",
+        optionC: "Pacific",
+        optionD: "Arctic",
+        answer: "optionC",
+      },
+      {
+        question: "How many sides does a triangle have?",
+        optionA: "3",
+        optionB: "4",
+        optionC: "5",
+        optionD: "6",
+        answer: "optionA",
+      },
+      {
+        question: "Which sense organ is used to see?",
+        optionA: "Ear",
+        optionB: "Nose",
+        optionC: "Eye",
+        optionD: "Tongue",
         answer: "optionC",
       },
     ];

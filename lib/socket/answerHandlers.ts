@@ -3,13 +3,21 @@ import { leaderboardStore } from "../socket/leaderboardStore";
 
 
 export function registerAnswerHandlers(io: Server, socket: Socket) {
-socket.on("answer:submit", (data) => {
-  leaderboardStore.addPlayer(data.lobbyId, data.playerId, data.name);
+socket.on("submit-answer", (data) => {
+   console.log("ANSWER RECEIVED:", data);
 
-  const isCorrect = Boolean(data.isCorrect);
+  leaderboardStore.addPlayer(
+    data.lobbyId,
+    data.playerId,
+    data.name,
+  );
 
-  if (isCorrect) {
-    leaderboardStore.addScore(data.lobbyId, data.playerId, 10);
+  if (data.isCorrect) {
+    leaderboardStore.addScore(
+      data.lobbyId,
+      data.playerId,
+      10,
+    );
   }
 
   const updated = leaderboardStore.getLeaderboard(data.lobbyId);

@@ -1,4 +1,3 @@
-import { Lobby } from "@/types/lobby";
 
 export type LobbyStatus = "created" | "playing" | "finished";
 
@@ -10,6 +9,7 @@ export type LobbyState = {
   category: any;
   id: string;
   players: {
+    socketId: string;
     id: string;
     name: string;
     score: number;
@@ -40,6 +40,10 @@ export function createLobby(lobbyId: string): LobbyState {
     status: "created",
     currentQuestionIndex: 0,
     timer: 0,
+    scores: {},
+    answers: {},
+    difficulty: undefined,
+    category: undefined
   };
 
   gameStore.set(lobbyId, lobby);

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Clock, ChevronRight, ChevronLeft, Trophy, Home } from "lucide-react";
+import { Clock, ChevronRight, ChevronLeft, Trophy } from "lucide-react";
 import { socket } from "@/lib/socket/socket";
 
 export default function QuizPage() {
@@ -22,48 +22,29 @@ export default function QuizPage() {
 
   type Question = {
     question: string;
-
     optionA: string;
     optionB: string;
     optionC: string;
     optionD: string;
-
     answer: AnswerKey;
   };
 
   const [questions, setQuestions] = useState<Question[]>([]);
 
+  // Listen for quiz start and question updates
   useEffect(() => {
-    async function loadQuestions() {
-      try {
-        const res = await fetch(`/api/questions?lobbyId=${roomId}`);
-        const data = await res.json();
+    socket.on("quiz-started", (questions) => {
+      console.log("QUIZ STARTED RECEIVED", questions);
 
-        console.log("QUESTIONS FROM API:", data);
-
-        const qs = data.questions || [];
-
-        setQuestions(qs);
-
-        console.log("API QUESTIONS:", qs);
-      } catch (err) {
-        console.error("LOAD QUESTIONS ERROR:", err);
-      }
-    }
-
-    if (roomId) {
-      loadQuestions();
-    }
-  }, [roomId]);
-
-  useEffect(() => {
-    socket.on("quizStarted", (data) => {
-      console.log("QUIZ STARTED RECEIVED", data);
-      setQuestions(data.questions);
+      setQuestions(questions);
+      setLoading(false);
+      setQuizEnded(false);
+      setCurrentQuestion(0);
     });
 
     return () => {
-      socket.off("quizStarted");
+      socket.off("quiz-started");
+      setLoading(false);
     };
   }, []);
 
@@ -75,22 +56,21 @@ export default function QuizPage() {
   const [loading, setLoading] = useState(true);
   const q = questions[currentQuestion];
 
+  // User ID setup (email for authenticated users, guest ID for others)
   useEffect(() => {
     if (session?.user?.email) {
       setUserId(session.user.email);
       return;
     }
-
     let guestId = localStorage.getItem("guestId");
-
     if (!guestId) {
       guestId = crypto.randomUUID();
       localStorage.setItem("guestId", guestId);
     }
-
     setUserId(guestId);
   }, [session]);
 
+  // Socket connection and event handlers
   useEffect(() => {
     if (!userId) return;
 
@@ -98,14 +78,25 @@ export default function QuizPage() {
       socket.connect();
     }
 
-    socket.emit("joinRoom", roomId);
+    socket.emit("join-lobby", {
+      lobbyId: roomId,
+      player: {
+        id: userId,
+        name: session?.user?.name ?? "Player",
+      },
+    });
+
+    socket.emit("request-quiz-state", {
+      lobbyId: roomId,
+    });
 
     return () => {
-      socket.off("quizStarted");
-      socket.off("playersUpdated");
+      socket.off("quiz-started");
+      socket.off("players-update");
     };
   }, [roomId, userId]);
 
+  // Load quiz progress on initial load
   useEffect(() => {
     if (!userId) return;
 
@@ -119,32 +110,36 @@ export default function QuizPage() {
 
         if (data?.id) {
           setCurrentQuestion(data.currentQuestion ?? 0);
-          setAnswers(data.answers ?? Array(questions.length).fill(null));
+          setAnswers(data.answers ?? []);
           setScore(data.score ?? 0);
-          setQuizEnded(data.quizEnded ?? false);
+
+          // only restore ended state if truly finished
+          if (data.quizEnded) {
+            setQuizEnded(true);
+          }
         }
-      } catch {
-        // Optional: show toast here later
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     }
 
     loadProgress();
-  }, [userId, roomId, questions.length]);
+  }, [userId, roomId]);
 
+  // Initialize answers array when questions are loaded
   useEffect(() => {
-    if (questions.length > 0) {
+    if (questions.length > 0 && answers.length === 0) {
       setAnswers(Array(questions.length).fill(""));
     }
   }, [questions]);
 
+  // Timer effect
   useEffect(() => {
-    if (loading || quizEnded) return;
+    if (loading || quizEnded || questions.length === 0) return;
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -152,38 +147,51 @@ export default function QuizPage() {
           moveNext();
           return 30;
         }
-
         return prev - 1;
       });
     }, 1000);
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [currentQuestion, quizEnded, loading]);
+  }, [currentQuestion, quizEnded, loading, questions.length]);
+
+  // Quiz end effect
+  useEffect(() => {
+    console.log("QUIZ ENDED CHANGED:", quizEnded);
+  }, [quizEnded]);
+
+  // Request quiz state on initial load and when roomId changes
+  useEffect(() => {
+    if (!socket.connected) return;
+
+    socket.emit("request-quiz-state", {
+      lobbyId: roomId,
+    });
+  }, [roomId]);
 
   function finishQuiz() {
     let finalScore = 0;
 
     answers.forEach((answer, index) => {
-      if (!answer) return;
-
       if (answer === questions[index].answer) {
         finalScore++;
       }
     });
 
-    setScore(finalScore);
-    setQuizEnded(true);
+    router.push(
+      `/quiz/${roomId}/result?score=${finalScore}&total=${questions.length}`,
+    );
   }
 
   function moveNext() {
+    console.log("MOVE NEXT", currentQuestion, questions.length);
+
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((p) => p + 1);
-      setTimeLeft(30);
-    } else finishQuiz();
+    } else {
+      finishQuiz();
+    }
   }
 
   function movePrevious() {
@@ -199,136 +207,150 @@ export default function QuizPage() {
     setAnswers(newAnswers);
   }
 
-  // ── Background layers (shared) ─────────────────────────────────────────────
-const Background = () => (
-  <>
-    {/* Grid */}
-    <div
-      className="fixed inset-0 pointer-events-none"
-      style={{
-        backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
-        backgroundSize: "48px 48px",
-        zIndex: 0,
-      }}
-    />
+  // ── Background layers (shared) ──
+  const Background = () => (
+    <>
+      {/* Grid */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+          zIndex: 0,
+        }}
+      />
+      {/* Top radial glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)",
+          zIndex: 0,
+        }}
+      />
+      {/* Bottom-right glow */}
+      <div
+        className="fixed bottom-0 right-0 pointer-events-none"
+        style={{
+          width: 420,
+          height: 420,
+          borderRadius: "50%",
+          background: "rgba(234,120,30,.07)",
+          filter: "blur(100px)",
+          zIndex: 0,
+        }}
+      />
+      {/* Scanline — top:0 is required for qrScan animation to work */}
+      <div
+        className="fixed left-0 right-0 pointer-events-none"
+        style={{
+          height: 2,
+          top: 0,
+          background:
+            "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)",
+          animation: "qrScan 6s linear infinite",
+          zIndex: 1,
+        }}
+      />
+      {/* Orb 1 */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: "18%",
+          left: "4%",
+          width: 76,
+          height: 76,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
+          boxShadow:
+            "0 0 0 1px rgba(234,120,30,.3), 0 0 34px rgba(234,120,30,.18)",
+          animation: "floatA 8s ease-in-out infinite",
+          opacity: 0.42,
+          zIndex: 0,
+        }}
+      />
+      {/* Orb 2 */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: "58%",
+          right: "4%",
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
+          animation: "floatB 10s ease-in-out infinite",
+          opacity: 0.38,
+          zIndex: 0,
+        }}
+      />
+      {/* Orb 3 */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          bottom: "18%",
+          left: "8%",
+          width: 26,
+          height: 26,
+          borderRadius: "50%",
+          background: "#1a0a03",
+          border: "1px solid rgba(234,120,30,.4)",
+          animation: "floatC 6s ease-in-out infinite",
+          opacity: 0.5,
+          zIndex: 0,
+        }}
+      />
+      {/* Ring 1 */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: "6%",
+          left: "2%",
+          width: 100,
+          height: 100,
+          borderRadius: "50%",
+          border: "0.5px solid rgba(234,120,30,.14)",
+          animation: "spinRing 22s linear infinite",
+          zIndex: 0,
+        }}
+      />
+      {/* Ring 2 */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          bottom: "8%",
+          right: "3%",
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          border: "0.5px solid rgba(234,120,30,.11)",
+          animation: "spinRing 16s linear infinite reverse",
+          zIndex: 0,
+        }}
+      />
+      <style>{`
+        @keyframes qrScan    { 0%{top:-2%} 100%{top:102%} }
+        @keyframes qrBlink   { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes floatA    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
+        @keyframes floatB    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+        @keyframes floatC    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes spinRing  { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+      `}</style>
+    </>
+  );
 
-    {/* Top radial glow */}
-    <div
-      className="fixed inset-0 pointer-events-none"
-      style={{
-        background: "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)",
-        zIndex: 0,
-      }}
-    />
+  // ── Loading ──
+  console.log("RENDER STATE", {
+    loading,
+    quizEnded,
+    questionsLength: questions.length,
+    currentQuestion,
+    q,
+  });
 
-    {/* Bottom-right glow */}
-    <div
-      className="fixed bottom-0 right-0 pointer-events-none"
-      style={{
-        width: 420,
-        height: 420,
-        borderRadius: "50%",
-        background: "rgba(234,120,30,.07)",
-        filter: "blur(100px)",
-        zIndex: 0,
-      }}
-    />
-
-    {/* Scanline — only ONE, with top: 0 */}
-    <div
-      className="fixed left-0 right-0 pointer-events-none"
-      style={{
-        height: 2,
-        top: 0,
-        background: "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)",
-        animation: "qrScan 6s linear infinite",
-        zIndex: 1,
-      }}
-    />
-
-    {/* Orb 1 — large glowing */}
-    <div
-      className="fixed pointer-events-none"
-      style={{
-        top: "18%", left: "4%",
-        width: 76, height: 76,
-        borderRadius: "50%",
-        background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-        boxShadow: "0 0 0 1px rgba(234,120,30,.3), 0 0 34px rgba(234,120,30,.18)",
-        animation: "floatA 8s ease-in-out infinite",
-        opacity: 0.42,
-        zIndex: 0,
-      }}
-    />
-
-    {/* Orb 2 — small glowing */}
-    <div
-      className="fixed pointer-events-none"
-      style={{
-        top: "58%", right: "4%",
-        width: 48, height: 48,
-        borderRadius: "50%",
-        background: "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-        animation: "floatB 10s ease-in-out infinite",
-        opacity: 0.38,
-        zIndex: 0,
-      }}
-    />
-
-    {/* Orb 3 — small dark */}
-    <div
-      className="fixed pointer-events-none"
-      style={{
-        bottom: "18%", left: "8%",
-        width: 26, height: 26,
-        borderRadius: "50%",
-        background: "#1a0a03",
-        border: "1px solid rgba(234,120,30,.4)",
-        animation: "floatC 6s ease-in-out infinite",
-        opacity: 0.5,
-        zIndex: 0,
-      }}
-    />
-
-    {/* Ring 1 */}
-    <div
-      className="fixed pointer-events-none"
-      style={{
-        top: "6%", left: "2%",
-        width: 100, height: 100,
-        borderRadius: "50%",
-        border: "0.5px solid rgba(234,120,30,.14)",
-        animation: "spinRing 22s linear infinite",
-        zIndex: 0,
-      }}
-    />
-
-    {/* Ring 2 */}
-    <div
-      className="fixed pointer-events-none"
-      style={{
-        bottom: "8%", right: "3%",
-        width: 64, height: 64,
-        borderRadius: "50%",
-        border: "0.5px solid rgba(234,120,30,.11)",
-        animation: "spinRing 16s linear infinite reverse",
-        zIndex: 0,
-      }}
-    />
-
-    <style>{`
-      @keyframes qrScan    { 0%{top:-2%} 100%{top:102%} }
-      @keyframes qrBlink   { 0%,100%{opacity:1} 50%{opacity:0} }
-      @keyframes floatA    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
-      @keyframes floatB    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
-      @keyframes floatC    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-      @keyframes spinRing  { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-      @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
-    `}</style>
-  </>
-);
-
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <main
@@ -361,7 +383,7 @@ const Background = () => (
     );
   }
 
-  // ── Results screen ─────────────────────────────────────────────────────────
+  // ── Results screen ──
   if (quizEnded) {
     const pct = Math.round((score / questions.length) * 100);
     const safePct = Math.min(100, Math.max(0, pct || 0));
@@ -371,6 +393,9 @@ const Background = () => (
         className="relative min-h-screen overflow-x-hidden p-8"
         style={{ background: "#0a0a0a" }}
       >
+        {/* FIX 1: <Background /> was missing here — no 3D effects on results screen */}
+        <Background />
+
         <div className="relative max-w-3xl mx-auto" style={{ zIndex: 10 }}>
           {/* Header */}
           <div
@@ -389,7 +414,6 @@ const Background = () => (
               >
                 QuizRush — Results
               </div>
-
               <h1
                 style={{
                   fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
@@ -399,80 +423,75 @@ const Background = () => (
                 }}
               >
                 Quiz{" "}
-                <span
-                  style={{
-                    color: "#ea781e",
-                    fontStyle: "italic",
-                  }}
-                >
+                <span style={{ color: "#ea781e", fontStyle: "italic" }}>
                   Finished
                 </span>
               </h1>
             </div>
-
-            <button
-              onClick={() => router.push("/home")}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "9px 20px",
-                borderRadius: 8,
-                background: "#ea781e",
-                border: "none",
-                color: "#fff",
-                fontSize: 13,
-                fontFamily: "Georgia, serif",
-                cursor: "pointer",
-                transition: "background .2s, transform .15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "#d46a15";
-                (e.currentTarget as HTMLButtonElement).style.transform =
-                  "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "#ea781e";
-                (e.currentTarget as HTMLButtonElement).style.transform =
-                  "translateY(0)";
-              }}
-            >
-              Back to Home
-            </button>
-            
-<button
-  onClick={() => router.push(`/lobby/${roomId}`)}
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    padding: "9px 20px",
-    borderRadius: 8,
-    background: "#0d0d0d",
-    border: "1px solid rgba(234,120,30,.3)",
-    color: "#ea781e",
-    fontSize: 13,
-    fontFamily: "Georgia, serif",
-    cursor: "pointer",
-    transition: "background .2s, transform .15s",
-  }}
-  onMouseEnter={(e) => {
-    (e.currentTarget as HTMLButtonElement).style.background =
-      "rgba(234,120,30,.12)";
-    (e.currentTarget as HTMLButtonElement).style.transform =
-      "translateY(-1px)";
-  }}
-  onMouseLeave={(e) => {
-    (e.currentTarget as HTMLButtonElement).style.background = "#0d0d0d";
-    (e.currentTarget as HTMLButtonElement).style.transform =
-      "translateY(0)";
-  }}
->
-  View Leaderboard
-</button>
-
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button
+                onClick={() => router.push("/home")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "9px 20px",
+                  borderRadius: 8,
+                  background: "#ea781e",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontFamily: "Georgia, serif",
+                  cursor: "pointer",
+                  transition: "background .2s, transform .15s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "#d46a15";
+                  (e.currentTarget as HTMLButtonElement).style.transform =
+                    "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "#ea781e";
+                  (e.currentTarget as HTMLButtonElement).style.transform =
+                    "translateY(0)";
+                }}
+              >
+                Back to Home
+              </button>
+              <button
+                onClick={() => router.push(`/lobby/${roomId}`)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "9px 20px",
+                  borderRadius: 8,
+                  background: "#0d0d0d",
+                  border: "1px solid rgba(234,120,30,.3)",
+                  color: "#ea781e",
+                  fontSize: 13,
+                  fontFamily: "Georgia, serif",
+                  cursor: "pointer",
+                  transition: "background .2s, transform .15s",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(234,120,30,.12)";
+                  (e.currentTarget as HTMLButtonElement).style.transform =
+                    "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "#0d0d0d";
+                  (e.currentTarget as HTMLButtonElement).style.transform =
+                    "translateY(0)";
+                }}
+              >
+                View Leaderboard
+              </button>
+            </div>
           </div>
 
           {/* Score card */}
@@ -506,7 +525,6 @@ const Background = () => (
             >
               <Trophy size={32} color="#fff" />
             </div>
-
             <p
               style={{
                 color: "#ea781e",
@@ -522,7 +540,6 @@ const Background = () => (
                 /{questions.length}
               </span>
             </p>
-
             <p
               style={{
                 color: "rgba(245,240,232,.5)",
@@ -532,13 +549,11 @@ const Background = () => (
               }}
             >
               {safePct >= 80
-                ? "Excellent!"
+                ? " Excellent!"
                 : safePct >= 50
-                  ? "Good effort!"
-                  : "Keep practising!"}
+                  ? " Good effort!"
+                  : " Keep practising!"}
             </p>
-
-            {/* Score bar */}
             <div
               style={{
                 height: 4,
@@ -563,7 +578,6 @@ const Background = () => (
                 }}
               />
             </div>
-
             <p
               style={{
                 color: "rgba(245,240,232,.3)",
@@ -591,7 +605,6 @@ const Background = () => (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {questions.map((q, index) => {
               const userAnswer = answers[index];
-
               return (
                 <div
                   key={index}
@@ -617,32 +630,19 @@ const Background = () => (
                     </span>
                     {q.question}
                   </p>
-
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 6 }}
                   >
+                    {/* FIX 2: was using questions[currentQuestion].optionX — wrong! */}
+                    {/* Now correctly uses q.optionX (the per-card mapped question) */}
                     {[
-                      {
-                        key: "optionA",
-                        value: questions[currentQuestion].optionA,
-                      },
-                      {
-                        key: "optionB",
-                        value: questions[currentQuestion].optionB,
-                      },
-                      {
-                        key: "optionC",
-                        value: questions[currentQuestion].optionC,
-                      },
-                      {
-                        key: "optionD",
-                        value: questions[currentQuestion].optionD,
-                      },
+                      { key: "optionA", value: q.optionA },
+                      { key: "optionB", value: q.optionB },
+                      { key: "optionC", value: q.optionC },
+                      { key: "optionD", value: q.optionD },
                     ].map((option, i) => {
                       const isCorrect = option.key === q.answer;
-
                       const selectedKey = answers[index];
-
                       const isWrong =
                         selectedKey === option.key && selectedKey !== q.answer;
                       return (
@@ -651,29 +651,67 @@ const Background = () => (
                           style={{
                             padding: "9px 14px",
                             borderRadius: 8,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
                             background: isCorrect
                               ? "rgba(59,109,17,.18)"
                               : isWrong
                                 ? "rgba(163,45,45,.15)"
-                                : "transparent",
-                            border: `0.5px solid ${
-                              isCorrect
-                                ? "#3B6D11"
-                                : isWrong
-                                  ? "#A32D2D"
-                                  : "rgba(255,255,255,.1)"
-                            }`,
+                                : "rgba(245,240,232,.03)",
+                            border: `0.5px solid ${isCorrect ? "#3B6D11" : isWrong ? "#A32D2D" : "rgba(255,255,255,.1)"}`,
                             color: isCorrect
                               ? "#97C459"
                               : isWrong
                                 ? "#F09595"
-                                : "#ccc",
+                                : "rgba(245,240,232,.45)",
+                            fontSize: 13,
+                            fontFamily: "Georgia, serif",
                           }}
                         >
-                          {option.key}
-
-                          {isCorrect && " ✓ Correct"}
-                          {isWrong && " ✗ Wrong"}
+                          <span
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 22,
+                                height: 22,
+                                borderRadius: 5,
+                                background: isCorrect
+                                  ? "rgba(59,109,17,.3)"
+                                  : isWrong
+                                    ? "rgba(163,45,45,.3)"
+                                    : "rgba(245,240,232,.06)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 10,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {["A", "B", "C", "D"][i]}
+                            </span>
+                            {option.value}
+                          </span>
+                          {isCorrect && (
+                            <span
+                              style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                            >
+                              ✓ Correct
+                            </span>
+                          )}
+                          {isWrong && (
+                            <span
+                              style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                            >
+                              ✗ Wrong
+                            </span>
+                          )}
                         </div>
                       );
                     })}
@@ -686,132 +724,19 @@ const Background = () => (
       </main>
     );
   }
-  // ── Active quiz screen ─────────────────────────────────────────────────────
 
+  // ── Waiting for host ──
   if (!questions.length) {
+    console.log("RENDERING QUIZ UI");
+
     return (
       <main
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{ background: "#0a0a0a" }}
       >
-        {/* Grid */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-            zIndex: 0,
-          }}
-        />
-        {/* Top glow */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(234,120,30,.14) 0%, transparent 68%)",
-            zIndex: 0,
-          }}
-        />
-        {/* Bottom-right glow */}
-        <div
-          className="fixed bottom-0 right-0 pointer-events-none"
-          style={{
-            width: 400,
-            height: 400,
-            borderRadius: "50%",
-            background: "rgba(234,120,30,.07)",
-            filter: "blur(100px)",
-            zIndex: 0,
-          }}
-        />
-        {/* Scanline */}
-        <div
-          className="fixed left-0 right-0 pointer-events-none"
-          style={{
-            height: 2,
-            background:
-              "linear-gradient(90deg, transparent, rgba(234,120,30,.25), transparent)",
-            animation: "qrScan 6s linear infinite",
-            zIndex: 1,
-          }}
-        />
-        {/* Orbs */}
-        <div
-          className="fixed pointer-events-none"
-          style={{
-            top: "18%",
-            left: "5%",
-            width: 76,
-            height: 76,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-            boxShadow:
-              "0 0 0 1px rgba(234,120,30,.3),0 0 34px rgba(234,120,30,.18)",
-            animation: "floatA 8s ease-in-out infinite",
-            opacity: 0.42,
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="fixed pointer-events-none"
-          style={{
-            top: "58%",
-            right: "5%",
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-            animation: "floatB 10s ease-in-out infinite",
-            opacity: 0.38,
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="fixed pointer-events-none"
-          style={{
-            bottom: "18%",
-            left: "9%",
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            background: "#1a0a03",
-            border: "1px solid rgba(234,120,30,.4)",
-            animation: "floatC 6s ease-in-out infinite",
-            opacity: 0.5,
-            zIndex: 0,
-          }}
-        />
-        {/* Rings */}
-        <div
-          className="fixed pointer-events-none"
-          style={{
-            top: "6%",
-            left: "2%",
-            width: 100,
-            height: 100,
-            borderRadius: "50%",
-            border: "0.5px solid rgba(234,120,30,.14)",
-            animation: "spinRing 22s linear infinite",
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="fixed pointer-events-none"
-          style={{
-            bottom: "8%",
-            right: "3%",
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            border: "0.5px solid rgba(234,120,30,.11)",
-            animation: "spinRing 16s linear infinite reverse",
-            zIndex: 0,
-          }}
-        />
+        {/* FIX 3: replaced broken inline divs (missing top:0 on scanline) with <Background /> */}
+        <Background />
 
-        {/* Card */}
         <div
           className="relative flex flex-col items-center text-center"
           style={{
@@ -828,7 +753,6 @@ const Background = () => (
               "0 0 0 0.5px rgba(234,120,30,.08), 0 32px 80px rgba(0,0,0,.55)",
           }}
         >
-          {/* Icon */}
           <div
             style={{
               width: 72,
@@ -848,7 +772,6 @@ const Background = () => (
           >
             ⏳
           </div>
-
           <div
             style={{
               fontSize: 10,
@@ -860,7 +783,6 @@ const Background = () => (
           >
             QuizRush — Standby
           </div>
-
           <h1
             style={{
               fontFamily: "Georgia, serif",
@@ -876,7 +798,6 @@ const Background = () => (
               start the quiz…
             </span>
           </h1>
-
           <p
             style={{
               fontFamily: "Georgia, serif",
@@ -890,7 +811,6 @@ const Background = () => (
             <br />
             Get ready — questions drop any second.
           </p>
-
           {/* Bouncing dots */}
           <div
             style={{
@@ -913,7 +833,6 @@ const Background = () => (
               />
             ))}
           </div>
-
           {/* Badge */}
           <div
             style={{
@@ -942,7 +861,6 @@ const Background = () => (
             />
             Connected to room
           </div>
-
           <div
             style={{
               width: "100%",
@@ -951,7 +869,6 @@ const Background = () => (
               margin: "1.5rem 0",
             }}
           />
-
           <p
             style={{
               fontSize: 11,
@@ -962,23 +879,18 @@ const Background = () => (
             You'll be taken to the quiz automatically
           </p>
         </div>
-
-        <style>{`
-        @keyframes qrScan   { 0%{top:-2%} 100%{top:102%} }
-        @keyframes qrBlink  { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes floatA   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
-        @keyframes floatB   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
-        @keyframes floatC   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes spinRing { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
-      `}</style>
       </main>
     );
   }
 
+  // ── Active quiz screen ──
   const progress = (currentQuestion / questions.length) * 100;
   const timerPct = (timeLeft / 30) * 100;
   const timerDanger = timeLeft <= 8;
+
+  console.log("q =", q);
+  console.log("questions =", questions.length);
+  console.log("quizEnded =", quizEnded);
 
   return (
     <main
@@ -988,7 +900,7 @@ const Background = () => (
       <Background />
 
       <div className="relative max-w-2xl mx-auto" style={{ zIndex: 10 }}>
-        {/* ── Top bar ── */}
+        {/* Top bar */}
         <div
           className="flex items-center justify-between flex-wrap gap-3 pb-5 mb-6"
           style={{ borderBottom: "0.5px solid rgba(234,120,30,.15)" }}
@@ -1016,10 +928,9 @@ const Background = () => (
               Quiz{" "}
               <span style={{ color: "#ea781e", fontStyle: "italic" }}>
                 Started
-              </span>{" "}
+              </span>
             </h1>
           </div>
-
           {/* Timer badge */}
           <div
             style={{
@@ -1045,7 +956,7 @@ const Background = () => (
           </div>
         </div>
 
-        {/* ── Main card ── */}
+        {/* Main card */}
         <div
           style={{
             borderRadius: 20,
@@ -1099,6 +1010,7 @@ const Background = () => (
               {answers.filter(Boolean).length} answered
             </span>
           </div>
+
           {/* Timer bar */}
           <div
             style={{
@@ -1119,6 +1031,7 @@ const Background = () => (
               }}
             />
           </div>
+
           {/* Question */}
           <div
             style={{
@@ -1151,8 +1064,8 @@ const Background = () => (
               {questions[currentQuestion].question}
             </p>
           </div>
-          {/* Options */}
 
+          {/* Options */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[
               { key: "optionA", value: q.optionA },
@@ -1161,7 +1074,6 @@ const Background = () => (
               { key: "optionD", value: q.optionD },
             ].map((option, i) => {
               const selectedKey = answers[currentQuestion];
-
               const isSelected = selectedKey === option.key;
               const isCorrect = option.key === q.answer;
               const isWrong = isSelected && option.key !== q.answer;
@@ -1175,7 +1087,6 @@ const Background = () => (
                     padding: "13px 16px",
                     borderRadius: 10,
                     textAlign: "left",
-
                     background: isSelected
                       ? "rgba(234,120,30,.15)"
                       : isCorrect && quizEnded
@@ -1183,7 +1094,6 @@ const Background = () => (
                         : isWrong && quizEnded
                           ? "rgba(163,45,45,.15)"
                           : "#111",
-
                     border: isSelected
                       ? "0.5px solid rgba(234,120,30,.6)"
                       : isCorrect && quizEnded
@@ -1191,7 +1101,6 @@ const Background = () => (
                         : isWrong && quizEnded
                           ? "0.5px solid #A32D2D"
                           : "0.5px solid rgba(245,240,232,.08)",
-
                     color: isSelected
                       ? "#f5f0e8"
                       : isCorrect && quizEnded
@@ -1199,7 +1108,6 @@ const Background = () => (
                         : isWrong && quizEnded
                           ? "#F09595"
                           : "rgba(245,240,232,.65)",
-
                     fontSize: 14,
                     fontFamily: "Georgia, serif",
                     cursor: "pointer",
@@ -1207,6 +1115,24 @@ const Background = () => (
                     alignItems: "center",
                     gap: 12,
                     transition: "all .15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (isSelected) return;
+                    (e.currentTarget as HTMLButtonElement).style.borderColor =
+                      "rgba(234,120,30,.35)";
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "rgba(234,120,30,.06)";
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      "#f5f0e8";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isSelected) return;
+                    (e.currentTarget as HTMLButtonElement).style.borderColor =
+                      "rgba(245,240,232,.08)";
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "#111";
+                    (e.currentTarget as HTMLButtonElement).style.color =
+                      "rgba(245,240,232,.65)";
                   }}
                 >
                   <span
@@ -1219,12 +1145,10 @@ const Background = () => (
                         : isCorrect && quizEnded
                           ? "#3B6D11"
                           : "rgba(245,240,232,.06)",
-
                       border:
                         isSelected || (isCorrect && quizEnded)
                           ? "none"
                           : "0.5px solid rgba(245,240,232,.1)",
-
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1235,7 +1159,6 @@ const Background = () => (
                   >
                     {["A", "B", "C", "D"][i]}
                   </span>
-
                   {option.value}
                 </button>
               );

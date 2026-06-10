@@ -122,9 +122,7 @@ export function nextQuestion(io: Server, lobbyId: string) {
     lobby.status = "finished";
 
     io.to(lobbyId).emit("quiz-ended", {
-      leaderboard: [...lobby.players].sort(
-        (a, b) => b.score - a.score
-      ),
+      leaderboard: [...lobby.players].sort((a, b) => b.score - a.score),
     });
 
     return;

@@ -1,5 +1,5 @@
 type PlayerScore = {
-  playerId: string;
+  id: string;
   name: string;
   score: number;
 };
@@ -21,7 +21,7 @@ export default function ScoreBoard({
         <div className="space-y-2">
           {safeLeaderboard.map((p, index) => (
             <div
-              key={p.playerId}
+              key={p.id}
               className="flex justify-between p-2 border rounded"
             >
               <span>
