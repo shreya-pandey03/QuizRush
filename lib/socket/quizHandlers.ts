@@ -5,9 +5,7 @@ import { generateQuestions } from "@/lib/ai/generateQuestions";
 
 export function quizHandlers(io: Server, socket: Socket) {
   socket.on("start-quiz", async ({ lobbyId }) => {
-
     try {
-      
       console.log("START QUIZ RECEIVED:", lobbyId);
 
       const lobby = gameStore.get(lobbyId);
@@ -17,7 +15,7 @@ export function quizHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      if (lobby.questions.length === 0) {
+      if (!lobby.questions || lobby.questions.length === 0) {
         const generatedQuestions = await generateQuestions(
           String(lobby.category),
           String(lobby.difficulty),
@@ -48,13 +46,27 @@ export function quizHandlers(io: Server, socket: Socket) {
   });
 
   socket.on("request-quiz-state", ({ lobbyId }) => {
+    console.log("REQUEST QUIZ STATE:", lobbyId);
+
     const lobby = gameStore.get(lobbyId);
 
-    if (!lobby || !lobby.started) return;
+    console.log("LOBBY FOUND:", lobby);
 
-    console.log("SYNCING QUIZ STATE:", lobby.questions.length);
+    if (!lobby) {
+      socket.emit("quiz-state", {
+        started: false,
+        questions: [],
+      });
+      return;
+    }
 
-    socket.emit("quiz-started", lobby.questions);
-    socket.emit("timer-update", lobby.timer);
+    console.log("QUESTIONS COUNT:", lobby.questions?.length);
+
+    socket.emit("quiz-state", {
+      started: lobby.started,
+      questions: lobby.questions,
+    });
   });
+
 }
+

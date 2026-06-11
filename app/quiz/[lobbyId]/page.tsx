@@ -54,7 +54,7 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [quizEnded, setQuizEnded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const q = questions[currentQuestion];
+  const q = questions[currentQuestion] ?? null;
 
   // User ID setup (email for authenticated users, guest ID for others)
   useEffect(() => {
@@ -90,7 +90,26 @@ export default function QuizPage() {
       lobbyId: roomId,
     });
 
+    // Receive current quiz state after refresh
+    socket.on("quiz-state", (data) => {
+      console.log("QUIZ STATE RECEIVED:", data);
+
+      if (data.questions?.length) {
+        setQuestions(data.questions);
+        setLoading(false);
+
+        if (data.currentQuestion !== undefined) {
+          setCurrentQuestion(data.currentQuestion);
+        }
+      }
+    });
+
+    socket.emit("request-quiz-state", {
+      lobbyId: roomId,
+    });
+
     return () => {
+      socket.off("quiz-state");
       socket.off("quiz-started");
       socket.off("players-update");
     };
@@ -108,12 +127,12 @@ export default function QuizPage() {
 
         const data = await res.json();
 
-        if (data?.id) {
+        console.log("LOADED PROGRESS:", data);
+
+        if (data?.lobbyId) {
           setCurrentQuestion(data.currentQuestion ?? 0);
-          setAnswers(data.answers ?? []);
           setScore(data.score ?? 0);
 
-          // only restore ended state if truly finished
           if (data.quizEnded) {
             setQuizEnded(true);
           }
@@ -139,6 +158,8 @@ export default function QuizPage() {
   useEffect(() => {
     if (loading || quizEnded || questions.length === 0) return;
 
+    setTimeLeft(30);
+
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
@@ -158,7 +179,7 @@ export default function QuizPage() {
 
   // Quiz end effect
   useEffect(() => {
-    console.log("QUIZ ENDED CHANGED:", quizEnded);
+    console.log("QUIZ ENDED =", quizEnded);
   }, [quizEnded]);
 
   // Request quiz state on initial load and when roomId changes
@@ -170,18 +191,46 @@ export default function QuizPage() {
     });
   }, [roomId]);
 
+  // Redirect to results page when quiz ends
+  useEffect(() => {
+    if (!quizEnded) return;
+
+    router.push(
+      `/quiz/${roomId}/results?score=${score}&total=${questions.length}`,
+    );
+  }, [quizEnded, score, questions.length, roomId, router]);
+
   function finishQuiz() {
     let finalScore = 0;
 
-    answers.forEach((answer, index) => {
-      if (answer === questions[index].answer) {
+    const results = questions.map((question, index) => {
+      const userAnswer = answers[index];
+
+      const isCorrect = userAnswer === question.answer;
+
+      if (isCorrect) {
         finalScore++;
       }
+
+      return {
+        question: question.question,
+        correctAnswer: question.answer,
+        userAnswer,
+        isCorrect,
+      };
     });
 
-    router.push(
-      `/quiz/${roomId}/result?score=${finalScore}&total=${questions.length}`,
-    );
+    setScore(finalScore);
+    setQuizEnded(true);
+
+    // Save results for Results page
+
+    localStorage.setItem(
+  `review-${lobbyId}`,
+  JSON.stringify(reviewData)
+);
+
+router.push(`/quiz/${lobbyId}/result`);
   }
 
   function moveNext() {
@@ -189,6 +238,7 @@ export default function QuizPage() {
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((p) => p + 1);
+      setTimeLeft(30); // reset timer for next question
     } else {
       finishQuiz();
     }
@@ -384,6 +434,7 @@ export default function QuizPage() {
   }
 
   // ── Results screen ──
+  
   if (quizEnded) {
     const pct = Math.round((score / questions.length) * 100);
     const safePct = Math.min(100, Math.max(0, pct || 0));
@@ -604,7 +655,6 @@ export default function QuizPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {questions.map((q, index) => {
-              const userAnswer = answers[index];
               return (
                 <div
                   key={index}
@@ -728,7 +778,6 @@ export default function QuizPage() {
   // ── Waiting for host ──
   if (!questions.length) {
     console.log("RENDERING QUIZ UI");
-
     return (
       <main
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
@@ -887,10 +936,6 @@ export default function QuizPage() {
   const progress = (currentQuestion / questions.length) * 100;
   const timerPct = (timeLeft / 30) * 100;
   const timerDanger = timeLeft <= 8;
-
-  console.log("q =", q);
-  console.log("questions =", questions.length);
-  console.log("quizEnded =", quizEnded);
 
   return (
     <main
@@ -1061,7 +1106,9 @@ export default function QuizPage() {
                 lineHeight: 1.5,
               }}
             >
-              {questions[currentQuestion].question}
+              {questions?.length > 0 &&
+                questions[currentQuestion] &&
+                questions[currentQuestion].question}
             </p>
           </div>
 
@@ -1295,7 +1342,7 @@ export default function QuizPage() {
               key={i}
               onClick={() => {
                 setCurrentQuestion(i);
-                setTimeLeft(30);
+                setTimeLeft(50);
               }}
               style={{
                 width: i === currentQuestion ? 22 : 8,

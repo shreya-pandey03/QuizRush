@@ -75,14 +75,15 @@ export default function useSocket({
       setLeaderboard(data);
     });
 
+    // Listen for quiz end event
     socket.on("quiz-ended", (data) => {
       useLeaderboardStore.getState().setLeaderboard(data.leaderboard);
 
       useQuizStore.getState().setFinished(true);
 
       //  RESET OLD STATE
-      useQuizStore.getState().setQuestions([]);
-      useQuizStore.getState().setQuestion(null as any);
+      // useQuizStore.getState().setQuestions([]);
+      // useQuizStore.getState().setQuestion(null as any);
 
       useLobbyStore.getState().setPlayers([]);
 

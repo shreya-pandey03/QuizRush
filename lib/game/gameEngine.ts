@@ -1,6 +1,9 @@
 import { Server } from "socket.io";
 import { timers } from "./timers";
 import { gameStore } from "@/lib/socket/gameStore";
+import { db } from "@/drizzle/src/db";
+import { lobbyQuestions } from "@/drizzle/src/db/schema";
+import { eq, asc } from "drizzle-orm";
 
 type Player = {
   id: string;
@@ -28,19 +31,28 @@ type Lobby = {
   players: Player[];
 };
 
-export function startGame(io: Server, lobbyId: string) {
-  const lobby = gameStore.get(lobbyId) as Lobby | undefined;
+export async function startGame(io: Server, lobbyId: string) {
+  const lobby = gameStore.get(lobbyId);
 
   if (!lobby) return;
 
-  // prevent double start
   if (lobby.status === "playing") return;
-  if (!lobby.questions?.length) {
-    console.error("No questions found for lobby:", lobbyId);
-    return;
-  }
 
-  //  proper initialization
+  //  ALWAYS LOAD FROM DB
+  const questions = await db
+    .select()
+    .from(lobbyQuestions)
+    .where(eq(lobbyQuestions.lobbyId, lobbyId))
+    .orderBy(asc(lobbyQuestions.questionNumber));
+
+  // if (!questions.length) {
+  //   console.log("NO QUESTIONS IN DB FOR LOBBY:", lobbyId);
+  //   return;
+  // }
+
+  // sync into memory
+  lobby.questions = questions;
+
   lobby.started = true;
   lobby.status = "playing";
   lobby.currentQuestionIndex = 0;
