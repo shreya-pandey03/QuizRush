@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket/socket";
-
 import { useLobbyStore } from "@/store/lobbyStore";
 import { useTimerStore } from "@/store/timerStore";
 import { useQuizStore } from "@/store/quizStore";
@@ -33,7 +32,7 @@ export default function useSocket({
 
     const handleConnect = () => {
       console.log("CONNECTED:", socket.id);
-      
+
       console.log("JOINED ROOM:", socket.id, lobbyId);
 
       socket.emit("join-lobby", {
@@ -54,6 +53,8 @@ export default function useSocket({
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
 
+
+    
     socket.on("players-update", (players) => {
       setPlayers(players);
       setLeaderboard(players);

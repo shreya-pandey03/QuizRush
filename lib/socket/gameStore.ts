@@ -1,4 +1,11 @@
-export type LobbyStatus = "created" | "playing" | "finished";
+//GAME STORE (IN MEMORY)
+export const gameStore = new Map<string, LobbyState>();
+
+export function hydrateLobby(lobbyId: string, lobby: LobbyState) {
+  gameStore.set(lobbyId, lobby);
+}
+
+export type LobbyStatus = "created" | "waiting" | "playing" | "finished";
 
 //  ONLY LIVE GAME STATE (RAM ONLY)
 
@@ -15,16 +22,17 @@ export type LobbyState = {
 
   players: Player[];
 
-  // LIVE ONLY (NO DB SOURCE OF TRUTH HERE)
+  // LIVE GAME STATE
   currentQuestionIndex: number;
   timer: number;
 
   started: boolean;
   status: LobbyStatus;
 
-  // optional cache (NOT authoritative)
-  questions?: Question[];
+  // MUST ALWAYS EXIST IN RUNTIME
+  questions: Question[];
 
+  // metadata (optional)
   category?: string;
   difficulty?: string;
 };
@@ -40,10 +48,6 @@ export type Question = {
   answer: string;
 };
 
-//GAME STORE (IN MEMORY)
-
-export const gameStore = new Map<string, LobbyState>();
-
 // CREATE LOBBY
 
 export function createLobby(lobbyId: string): LobbyState {
@@ -57,7 +61,8 @@ export function createLobby(lobbyId: string): LobbyState {
     started: false,
     status: "created",
 
-    questions: [],
+    questions: [], //always defined
+
     category: undefined,
     difficulty: undefined,
   };
@@ -65,20 +70,19 @@ export function createLobby(lobbyId: string): LobbyState {
   gameStore.set(lobbyId, lobby);
   return lobby;
 }
+
 // GET LOBBY
 
 export function getLobby(lobbyId: string) {
   return gameStore.get(lobbyId);
 }
 
-// UPDATE LOBBY
-
+//Reset lobby
 export function resetLobby(lobbyId: string) {
   const lobby = gameStore.get(lobbyId);
 
   if (!lobby) return;
 
-  // reset ONLY runtime state
   lobby.players = [];
   lobby.currentQuestionIndex = 0;
   lobby.timer = 0;
@@ -86,8 +90,7 @@ export function resetLobby(lobbyId: string) {
   lobby.started = false;
   lobby.status = "created";
 
-  // clear cached questions
-  lobby.questions = [];
+  lobby.questions = []; // safe now
 
   gameStore.set(lobbyId, lobby);
 }

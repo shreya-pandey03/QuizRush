@@ -13,20 +13,28 @@ type Lobby = {
 };
 
 type LobbyStore = {
-  id: any;
   lobby: Lobby | null;
+
   setLobby: (lobby: Lobby | null) => void;
 
-  // optional but IMPORTANT if you use players separately
-  players: Player[];
-  setPlayers: (players: Player[]) => void;
+  setPlayersFromLobby: (players: Player[]) => void;
 };
 
-export const useLobbyStore = create<LobbyStore>((set) => ({
+export const useLobbyStore = create<LobbyStore>((set, get) => ({
   lobby: null,
-  players: [],
 
   setLobby: (lobby) => set({ lobby }),
 
-  setPlayers: (players) => set({ players }),
+  setPlayersFromLobby: (players) => {
+    const lobby = get().lobby;
+
+    if (!lobby) return;
+
+    set({
+      lobby: {
+        ...lobby,
+        players,
+      },
+    });
+  },
 }));

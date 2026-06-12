@@ -10,22 +10,22 @@ type Question = {
 };
 
 interface QuizStore {
-  setFinished(arg0: boolean): unknown;
   questions: Question[];
   currentIndex: number;
   question: Question | null;
   score: number;
   finished: boolean;
-
   answers: string[];
 
   setQuestions: (questions: Question[]) => void;
-  setQuestion: (question: Question) => void;
+  setQuestion: (question: Question | null) => void;
 
   nextQuestion: () => void;
   addScore: () => void;
 
   setAnswer: (index: number, answer: string) => void;
+
+  setFinished: (value: boolean) => void;
 
   reset: () => void;
 }
@@ -33,13 +33,9 @@ interface QuizStore {
 export const useQuizStore = create<QuizStore>((set, get) => ({
   questions: [],
   currentIndex: 0,
-
   question: null,
-
   score: 0,
   finished: false,
-
-  //  important for result screen
   answers: [],
 
   setQuestions: (questions) =>
@@ -52,12 +48,8 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       answers: [],
     }),
 
-  setQuestion: (question) =>
-    set({
-      question,
-    }),
+  setQuestion: (question) => set({ question }),
 
-  // store answer per question
   setAnswer: (index, answer) =>
     set((state) => {
       const updated = [...state.answers];
@@ -65,22 +57,18 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       return { answers: updated };
     }),
 
+  setFinished: (value) => set({ finished: value }),
+
   nextQuestion: () => {
     const { questions, currentIndex } = get();
-
-    console.log("CURRENT:", currentIndex);
-    console.log("TOTAL:", questions.length);
 
     const next = currentIndex + 1;
 
     if (next >= questions.length) {
-      console.log("QUIZ FINISHED");
-
       set({
         finished: true,
         question: null,
       });
-
       return;
     }
 

@@ -8,10 +8,13 @@ import { socket } from "@/lib/socket/socket";
 
 export default function QuizPage() {
   const params = useParams();
+  const lobbyId = params.lobbyId as string;
   const router = useRouter();
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState("");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
   const roomId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
     : String(params.lobbyId);
@@ -30,7 +33,14 @@ export default function QuizPage() {
   };
 
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [] = useState<ReviewItem[]>([]);
 
+  type ReviewItem = {
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+  };
   // Listen for quiz start and question updates
   useEffect(() => {
     socket.on("quiz-started", (questions) => {
@@ -200,37 +210,55 @@ export default function QuizPage() {
     );
   }, [quizEnded, score, questions.length, roomId, router]);
 
+  //rejoin
+  useEffect(() => {
+    socket.emit("rejoin-lobby", { lobbyId, userId });
+  }, []);
+
   function finishQuiz() {
     let finalScore = 0;
 
-    const results = questions.map((question, index) => {
-      const userAnswer = answers[index];
+    const reviewData = questions.map((question, index) => {
+      const userAnswerKey = answers?.[index]; // "optionA"
 
-      const isCorrect = userAnswer === question.answer;
+      const isCorrect = userAnswerKey === question.answer;
 
-      if (isCorrect) {
-        finalScore++;
-      }
+      if (isCorrect) finalScore++;
+
+      const optionMap: Record<string, string> = {
+        optionA: question.optionA,
+        optionB: question.optionB,
+        optionC: question.optionC,
+        optionD: question.optionD,
+      };
 
       return {
         question: question.question,
-        correctAnswer: question.answer,
-        userAnswer,
+        userAnswer: optionMap[userAnswerKey ?? ""] ?? "Not answered",
+        correctAnswer: optionMap[question.answer],
         isCorrect,
       };
     });
 
-    setScore(finalScore);
-    setQuizEnded(true);
-
-    // Save results for Results page
+    // ✅ SAVE FIRST (critical for race condition fix)
+    localStorage.setItem(`review-${lobbyId}`, JSON.stringify(reviewData));
 
     localStorage.setItem(
-  `review-${lobbyId}`,
-  JSON.stringify(reviewData)
-);
+      `score-${lobbyId}`,
+      JSON.stringify({
+        score: finalScore,
+        total: questions.length,
+      }),
+    );
 
-router.push(`/quiz/${lobbyId}/result`);
+    //  DO NOT rely on React state for results page
+    setQuizEnded(true);
+    setScore(finalScore);
+
+    //  slight delay prevents UI flicker in Next.js router
+    setTimeout(() => {
+      router.replace(`/quiz/${lobbyId}/results`);
+    }, 50);
   }
 
   function moveNext() {
@@ -252,9 +280,11 @@ router.push(`/quiz/${lobbyId}/result`);
   }
 
   function submitAnswer(answer: AnswerKey) {
-    const newAnswers = [...answers];
-    newAnswers[currentQuestion] = answer;
-    setAnswers(newAnswers);
+    socket.emit("submit-answer", {
+      lobbyId,
+      playerId: user.id,
+      answer,
+    });
   }
 
   // ── Background layers (shared) ──
@@ -434,7 +464,7 @@ router.push(`/quiz/${lobbyId}/result`);
   }
 
   // ── Results screen ──
-  
+
   if (quizEnded) {
     const pct = Math.round((score / questions.length) * 100);
     const safePct = Math.min(100, Math.max(0, pct || 0));

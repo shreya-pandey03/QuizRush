@@ -66,8 +66,7 @@ export function sendQuestion(io: Server, lobbyId: string) {
 
   if (!lobby) return;
 
-  const question = lobby.questions[lobby.currentQuestionIndex];
-
+  const question = lobby.questions?.[lobby.currentQuestionIndex];
   if (!question) return;
 
   io.to(lobbyId).emit("new-question", {
@@ -129,8 +128,8 @@ export function nextQuestion(io: Server, lobbyId: string) {
 
   lobby.currentQuestionIndex++;
 
-  //  END GAME
   if (lobby.currentQuestionIndex >= lobby.questions.length) {
+    endGame(io, lobbyId);
     lobby.status = "finished";
 
     io.to(lobbyId).emit("quiz-ended", {
@@ -172,4 +171,44 @@ export function resetGame(io: Server, lobbyId: string) {
   });
 
   io.to(lobbyId).emit("quiz-reset");
+}
+
+export function submitAnswer(
+  io: Server,
+  lobbyId: string,
+  playerId: string,
+  answer: string,
+) {
+  const lobby = gameStore.get(lobbyId);
+  if (!lobby) return;
+
+  // ✅ FIX 1: ensure questions exist AND not empty
+  if (!lobby.questions || lobby.questions.length === 0) return;
+
+  const question = lobby.questions[lobby.currentQuestionIndex];
+  if (!question) return;
+
+  const player = lobby.players.find((p) => p.id === playerId);
+  if (!player) return;
+
+  const isCorrect = answer === question.answer;
+
+  if (isCorrect) {
+    player.score += 1;
+  }
+
+  if (player.answered) return; // prevent double submission
+
+  io.to(lobbyId).emit("player-update", lobby.players);
+}
+
+export function endGame(io: Server, lobbyId: string) {
+  const lobby = gameStore.get(lobbyId);
+  if (!lobby) return;
+
+  lobby.status = "finished";
+
+  const leaderboard = [...lobby.players].sort((a, b) => b.score - a.score);
+
+  io.to(lobbyId).emit("quiz-ended", { leaderboard });
 }

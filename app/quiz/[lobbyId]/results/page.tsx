@@ -1,27 +1,40 @@
 "use client";
 
-import { useSearchParams, useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Trophy, Home, RotateCcw, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
+type ReviewItem = {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+};
+
 export default function ResultsPage() {
-  const searchParams = useSearchParams();
   const params = useParams();
   const router = useRouter();
 
-  const score = Number(searchParams.get("score") || "0");
-  const total = Number(searchParams.get("total") || "0");
   const lobbyId = params.lobbyId as string;
 
-  const [reviewData, setReviewData] = useState([]);
+  const [reviewData, setReviewData] = useState<ReviewItem[]>([]);
+  const [mounted, setMounted] = useState(false);
 
+  // load data AFTER mount (fix hydration)
   useEffect(() => {
-    const saved = localStorage.getItem(`review-${lobbyId}`);
+    setMounted(true);
 
-    if (saved) {
-      setReviewData(JSON.parse(saved));
+    const data = localStorage.getItem(`review-${lobbyId}`);
+
+    if (data) {
+      setReviewData(JSON.parse(data));
     }
   }, [lobbyId]);
+
+  if (!mounted) return null;
+
+  const score = reviewData.filter((q) => q.isCorrect).length;
+  const total = reviewData.length;
 
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
 
@@ -31,24 +44,27 @@ export default function ResultsPage() {
         text: "Excellent!",
         sub: "You crushed it — top of the leaderboard material.",
       };
+
     if (pct >= 60)
       return {
         text: "Good effort!",
         sub: "Solid performance. A few more rounds and you'll dominate.",
       };
+
     if (pct >= 40)
       return {
         text: "Keep going!",
         sub: "You're getting there. Practice makes perfect.",
       };
+
     return {
-      emoji: "📚",
       text: "Keep practising!",
       sub: "Every question is a lesson. Come back stronger.",
     };
   };
 
-  const { emoji, text, sub } = getMessage();
+  const { text, sub } = getMessage();
+
   const barColor =
     pct >= 80
       ? "#3B6D11"
@@ -314,7 +330,7 @@ export default function ResultsPage() {
                   color: "#f5f0e8",
                 }}
               >
-                {emoji} {text}
+                {text}
               </div>
               <div
                 style={{
@@ -455,97 +471,6 @@ export default function ResultsPage() {
               }}
             />
 
-            {/* Question Review */}
-            {reviewData.length > 0 && (
-              <div style={{ marginBottom: "2rem" }}>
-                {/* HEADER ONCE */}
-                <div
-                  style={{
-                    fontSize: 12,
-                    letterSpacing: ".12em",
-                    textTransform: "uppercase",
-                    color: "#ea781e",
-                    marginBottom: 14,
-                  }}
-                >
-                  Question Review
-                </div>
-
-                {/* LIST */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 12,
-                    maxHeight: 400,
-                    overflowY: "auto",
-                  }}
-                >
-                  {reviewData.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        background: "rgba(245,240,232,.03)",
-                        border: `1px solid ${
-                          item.isCorrect
-                            ? "rgba(59,109,17,.4)"
-                            : "rgba(163,45,45,.4)"
-                        }`,
-                        borderRadius: 12,
-                        padding: "14px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#f5f0e8",
-                          marginBottom: 10,
-                          fontSize: 14,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        Q{index + 1}. {item.question}
-                      </div>
-
-                      <div
-                        style={{
-                          color: item.isCorrect ? "#97C459" : "#F09595",
-                          fontSize: 13,
-                          marginBottom: 6,
-                        }}
-                      >
-                        Your Answer: {item.userAnswer}
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#ea781e",
-                          fontSize: 13,
-                        }}
-                      >
-                        Correct Answer: {item.correctAnswer}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          display: "inline-block",
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          fontSize: 11,
-                          background: item.isCorrect
-                            ? "rgba(59,109,17,.15)"
-                            : "rgba(163,45,45,.15)",
-                          color: item.isCorrect ? "#97C459" : "#F09595",
-                        }}
-                      >
-                        {item.isCorrect ? "✓ Correct" : "✗ Incorrect"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Action buttons */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button
@@ -673,6 +598,97 @@ export default function ResultsPage() {
             </div>
           </div>
         </div>
+
+        {/* Question Review */}
+        {reviewData.length > 0 && (
+          <div style={{ marginBottom: "2rem" }}>
+            {/* HEADER ONCE */}
+            <div
+              style={{
+                fontSize: 12,
+                letterSpacing: ".12em",
+                textTransform: "uppercase",
+                color: "#ea781e",
+                marginBottom: 14,
+              }}
+            >
+              Question Review
+            </div>
+
+            {/* LIST */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                maxHeight: 400,
+                overflowY: "auto",
+              }}
+            >
+              {reviewData.map((item, index) => (
+                <div
+                  key={index}
+                  style={{
+                    background: "rgba(245,240,232,.03)",
+                    border: `1px solid ${
+                      item.isCorrect
+                        ? "rgba(59,109,17,.4)"
+                        : "rgba(163,45,45,.4)"
+                    }`,
+                    borderRadius: 12,
+                    padding: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#f5f0e8",
+                      marginBottom: 10,
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Q{index + 1}. {item.question}
+                  </div>
+
+                  <div
+                    style={{
+                      color: item.isCorrect ? "#97C459" : "#F09595",
+                      fontSize: 13,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Your Answer: {item.userAnswer}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#ea781e",
+                      fontSize: 13,
+                    }}
+                  >
+                    Correct Answer: {item.correctAnswer}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "inline-block",
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      fontSize: 11,
+                      background: item.isCorrect
+                        ? "rgba(59,109,17,.15)"
+                        : "rgba(163,45,45,.15)",
+                      color: item.isCorrect ? "#97C459" : "#F09595",
+                    }}
+                  >
+                    {item.isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p
           style={{

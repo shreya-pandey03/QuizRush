@@ -27,42 +27,38 @@ export function playerHandlers(io: Server, socket: Socket) {
           where: eq(lobbies.code, lobbyId),
         });
 
-        if (!dbLobby?.code || !dbLobby?.hostId) {
+        if (!dbLobby?.code) {
           socket.emit("error", "Lobby not found");
           return;
         }
 
         lobby = {
           id: dbLobby.code,
-          hostId: dbLobby.hostId,
-
-          category: "General",
-          difficulty: "Easy",
 
           players: [],
-          questions: [],
 
           currentQuestionIndex: 0,
           timer: 15,
 
           started: false,
-
           status: "waiting",
 
-          answers: {},
-          scores: {},
-        };
-      }
-      
+          questions: [],
 
-      if (!lobby) return;
+          category: "General",
+          difficulty: "Easy",
+        };
+
+        //  store it immediately
+        gameStore.set(lobbyId, lobby);
+      }
 
       socket.join(lobbyId);
 
       socket.data.lobbyId = lobbyId;
       socket.data.playerId = player.id;
 
-      // ✅ REMOVE OLD ENTRY OF SAME PLAYER (prevents duplicates)
+      // REMOVE DUPLICATES
       lobby.players = lobby.players.filter((p) => p.id !== player.id);
 
       // ADD PLAYER
@@ -71,18 +67,18 @@ export function playerHandlers(io: Server, socket: Socket) {
         name: player.name,
         score: 0,
         answered: false,
-        socketId: ""
+        socketId: socket.id,
       });
 
       gameStore.set(lobbyId, lobby);
 
       io.to(lobbyId).emit(
         "players-update",
-        [...lobby.players].sort((a, b) => b.score - a.score)
+        [...lobby.players].sort((a, b) => b.score - a.score),
       );
 
       // RESYNC IF GAME STARTED
-      if (lobby.status === "playing" && lobby.questions.length > 0) {
+      if (lobby.status === "playing") {
         socket.emit("quiz-started", lobby.questions);
         socket.emit("timer-update", lobby.timer);
       }
@@ -106,7 +102,7 @@ export function playerHandlers(io: Server, socket: Socket) {
 
     io.to(lobbyId).emit(
       "players-update",
-      [...lobby.players].sort((a, b) => b.score - a.score)
+      [...lobby.players].sort((a, b) => b.score - a.score),
     );
   });
 
@@ -126,7 +122,7 @@ export function playerHandlers(io: Server, socket: Socket) {
 
     io.to(lobbyId).emit(
       "players-update",
-      [...lobby.players].sort((a, b) => b.score - a.score)
+      [...lobby.players].sort((a, b) => b.score - a.score),
     );
   });
 }

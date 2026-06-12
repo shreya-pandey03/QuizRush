@@ -1,11 +1,10 @@
-import { Player } from "./player";
 import { Question } from "./question";
 
 export type LobbyStatus = "waiting" | "playing" | "finished";
 
 export type LobbyState = {
   id: string;
-   hostId: string; 
+  hostId: string;
   category: string;
   difficulty: string;
   players: Player[];
