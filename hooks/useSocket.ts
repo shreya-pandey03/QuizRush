@@ -24,7 +24,7 @@ export default function useSocket({
   useEffect(() => {
     if (!lobbyId || !userId) return;
 
-    const setPlayers = useLobbyStore.getState().setPlayers;
+    const setPlayersFromLobby = useLobbyStore.getState().setPlayersFromLobby;
     const setQuestions = useQuizStore.getState().setQuestions;
     const setQuestion = useQuizStore.getState().setQuestion;
     const setLeaderboard = useLeaderboardStore.getState().setLeaderboard;
@@ -53,10 +53,10 @@ export default function useSocket({
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
 
-
-    
     socket.on("players-update", (players) => {
-      setPlayers(players);
+      console.log("PLAYERS UPDATE", players);
+
+      setPlayersFromLobby(players);
       setLeaderboard(players);
     });
 
@@ -72,10 +72,15 @@ export default function useSocket({
       setQuestion(question);
     });
 
-    socket.on("leaderboard:update", (data) => {
-      setLeaderboard(data);
+    socket.on("leaderboard-update", (players) => {
+      console.log("LEADERBOARD UPDATE", players);
+
+      setLeaderboard(players);
     });
 
+    socket.on("answer-result", (data) => {
+      console.log("ANSWER RESULT", data);
+    });
     // Listen for quiz end event
     socket.on("quiz-ended", (data) => {
       useLeaderboardStore.getState().setLeaderboard(data.leaderboard);
@@ -98,7 +103,7 @@ export default function useSocket({
       socket.off("timer-update");
       socket.off("quiz-started");
       socket.off("next-question");
-      socket.off("leaderboard:update");
+      socket.off("leaderboard-update");
       socket.off("quiz-ended");
 
       socket.disconnect();

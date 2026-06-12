@@ -13,44 +13,51 @@ export function scoreHandlers(io: Server, socket: Socket) {
       playerId: string;
       answer: string;
     }) => {
+
+
       const lobby = gameStore.get(lobbyId);
 
-      if (!lobby) return;
+      if (!lobby) {
+        console.log("LOBBY NOT FOUND");
+        return;
+      }
 
-      const player = lobby.players.find(
-        (p) => p.id === playerId,
-      );
+      const player = lobby.players.find((p) => p.id === playerId);
 
-      if (!player) return;
+      if (!player) {
+        console.log("PLAYER NOT FOUND");
+        return;
+      }
 
-      const question =
-        lobby.questions[lobby.currentQuestionIndex];
+      const question = lobby.questions?.[lobby.currentQuestionIndex];
 
-      if (!question) return;
+      if (!question) {
+        console.log("QUESTION NOT FOUND");
+        return;
+      }
 
-      // prevent double answering
-      if (player.answered) return;
+      // prevent double answer
+      if (player.answered) {
+        console.log("ALREADY ANSWERED");
+        return;
+      }
 
       player.answered = true;
 
-      // save answer history
-      const answers = lobby.answers as Record<string, string[]>;
-      if (!answers[playerId]) {
-        answers[playerId] = [];
-      }
+      const isCorrect = answer === question.answer;
 
-      answers[playerId].push(answer);
-
-      const isCorrect =
-        answer === question.answer;
+      console.log({
+        selectedAnswer: answer,
+        correctAnswer: question.answer,
+        isCorrect,
+      });
 
       if (isCorrect) {
         player.score += 1;
       }
 
-      (lobby.scores as Record<string, number>)[playerId] = player.score;
+      console.log("UPDATED SCORE:", player.name, player.score);
 
-      // send answer result back
       socket.emit("answer-result", {
         selectedAnswer: answer,
         correctAnswer: question.answer,
@@ -58,12 +65,14 @@ export function scoreHandlers(io: Server, socket: Socket) {
         score: player.score,
       });
 
-      // update everyone
       io.to(lobbyId).emit(
         "leaderboard-update",
-        [...lobby.players].sort(
-          (a, b) => b.score - a.score,
-        ),
+        [...lobby.players].sort((a, b) => b.score - a.score),
+      );
+
+      io.to(lobbyId).emit(
+        "players-update",
+        [...lobby.players].sort((a, b) => b.score - a.score),
       );
     },
   );

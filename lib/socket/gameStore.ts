@@ -1,4 +1,6 @@
-//GAME STORE (IN MEMORY)
+
+
+
 export const gameStore = new Map<string, LobbyState>();
 
 export function hydrateLobby(lobbyId: string, lobby: LobbyState) {
@@ -19,22 +21,23 @@ export type Player = {
 
 export type LobbyState = {
   id: string;
+  hostId?: string;
 
   players: Player[];
 
-  // LIVE GAME STATE
   currentQuestionIndex: number;
   timer: number;
 
   started: boolean;
   status: LobbyStatus;
 
-  // MUST ALWAYS EXIST IN RUNTIME
-  questions: Question[];
+  questions?: Question[];
 
-  // metadata (optional)
   category?: string;
   difficulty?: string;
+
+  answers?: Record<string, string[]>;
+  scores?: Record<string, number>;
 };
 
 export type Question = {

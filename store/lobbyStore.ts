@@ -13,6 +13,7 @@ type Lobby = {
 };
 
 type LobbyStore = {
+  setPlayers(arg0: never[]): unknown;
   lobby: Lobby | null;
 
   setLobby: (lobby: Lobby | null) => void;

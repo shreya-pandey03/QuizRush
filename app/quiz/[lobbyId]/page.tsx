@@ -13,7 +13,6 @@ export default function QuizPage() {
   const { data: session } = useSession();
 
   const [userId, setUserId] = useState("");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   const roomId = Array.isArray(params.lobbyId)
     ? params.lobbyId[0]
@@ -33,7 +32,6 @@ export default function QuizPage() {
   };
 
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [] = useState<ReviewItem[]>([]);
 
   type ReviewItem = {
     question: string;
@@ -201,19 +199,15 @@ export default function QuizPage() {
     });
   }, [roomId]);
 
-  // Redirect to results page when quiz ends
-  useEffect(() => {
-    if (!quizEnded) return;
-
-    router.push(
-      `/quiz/${roomId}/results?score=${score}&total=${questions.length}`,
-    );
-  }, [quizEnded, score, questions.length, roomId, router]);
-
   //rejoin
   useEffect(() => {
-    socket.emit("rejoin-lobby", { lobbyId, userId });
-  }, []);
+    if (!userId) return;
+
+    socket.emit("rejoin-lobby", {
+      lobbyId,
+      userId,
+    });
+  }, [lobbyId, userId]);
 
   function finishQuiz() {
     let finalScore = 0;
@@ -240,7 +234,7 @@ export default function QuizPage() {
       };
     });
 
-    // ✅ SAVE FIRST (critical for race condition fix)
+    //  SAVE FIRST (critical for race condition fix)
     localStorage.setItem(`review-${lobbyId}`, JSON.stringify(reviewData));
 
     localStorage.setItem(
@@ -280,9 +274,18 @@ export default function QuizPage() {
   }
 
   function submitAnswer(answer: AnswerKey) {
+    console.log("SUBMIT ANSWER", {
+      lobbyId,
+      playerId: userId,
+      answer,
+    });
+    const newAnswers = [...answers];
+    newAnswers[currentQuestion] = answer;
+    setAnswers(newAnswers);
+
     socket.emit("submit-answer", {
       lobbyId,
-      playerId: user.id,
+      playerId: userId,
       answer,
     });
   }

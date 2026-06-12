@@ -1,7 +1,14 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, Home, RotateCcw, Users } from "lucide-react";
+import {
+  Trophy,
+  Home,
+  RotateCcw,
+  Users,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type ReviewItem = {
@@ -16,26 +23,19 @@ export default function ResultsPage() {
   const router = useRouter();
 
   const lobbyId = params.lobbyId as string;
-
   const [reviewData, setReviewData] = useState<ReviewItem[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // load data AFTER mount (fix hydration)
   useEffect(() => {
     setMounted(true);
-
     const data = localStorage.getItem(`review-${lobbyId}`);
-
-    if (data) {
-      setReviewData(JSON.parse(data));
-    }
+    if (data) setReviewData(JSON.parse(data));
   }, [lobbyId]);
 
   if (!mounted) return null;
 
   const score = reviewData.filter((q) => q.isCorrect).length;
   const total = reviewData.length;
-
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
 
   const getMessage = () => {
@@ -44,19 +44,16 @@ export default function ResultsPage() {
         text: "Excellent!",
         sub: "You crushed it — top of the leaderboard material.",
       };
-
     if (pct >= 60)
       return {
         text: "Good effort!",
         sub: "Solid performance. A few more rounds and you'll dominate.",
       };
-
     if (pct >= 40)
       return {
         text: "Keep going!",
         sub: "You're getting there. Practice makes perfect.",
       };
-
     return {
       text: "Keep practising!",
       sub: "Every question is a lesson. Come back stronger.",
@@ -64,7 +61,6 @@ export default function ResultsPage() {
   };
 
   const { text, sub } = getMessage();
-
   const barColor =
     pct >= 80
       ? "#3B6D11"
@@ -76,10 +72,10 @@ export default function ResultsPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-x-hidden flex items-center justify-center p-6"
+      className="relative min-h-screen overflow-x-hidden p-6"
       style={{ background: "#0a0a0a" }}
     >
-      {/* ── Grid ── */}
+      {/* ── Background ── */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -88,7 +84,6 @@ export default function ResultsPage() {
           zIndex: 0,
         }}
       />
-      {/* ── Top glow ── */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
@@ -97,7 +92,6 @@ export default function ResultsPage() {
           zIndex: 0,
         }}
       />
-      {/* ── Bottom-right glow ── */}
       <div
         className="fixed bottom-0 right-0 pointer-events-none"
         style={{
@@ -109,7 +103,6 @@ export default function ResultsPage() {
           zIndex: 0,
         }}
       />
-      {/* ── Scanline ── */}
       <div
         className="fixed left-0 right-0 pointer-events-none"
         style={{
@@ -121,7 +114,6 @@ export default function ResultsPage() {
           zIndex: 1,
         }}
       />
-      {/* ── Orbs ── */}
       <div
         className="fixed pointer-events-none"
         style={{
@@ -184,7 +176,6 @@ export default function ResultsPage() {
           zIndex: 0,
         }}
       />
-      {/* ── Rings ── */}
       <div
         className="fixed pointer-events-none"
         style={{
@@ -212,8 +203,11 @@ export default function ResultsPage() {
         }}
       />
 
-      {/*  CARD  */}
-      <div className="relative w-full" style={{ zIndex: 10, maxWidth: 480 }}>
+      {/* ══ CONTENT ══ */}
+      <div
+        className="relative mx-auto w-full"
+        style={{ zIndex: 10, maxWidth: 560, paddingTop: 8 }}
+      >
         {/* Badge */}
         <div
           style={{
@@ -251,7 +245,7 @@ export default function ResultsPage() {
           </div>
         </div>
 
-        {/* Main card */}
+        {/* ── Score card ── */}
         <div
           style={{
             borderRadius: 20,
@@ -261,18 +255,17 @@ export default function ResultsPage() {
             boxShadow:
               "0 0 0 0.5px rgba(234,120,30,.08), 0 40px 80px rgba(0,0,0,.6)",
             overflow: "hidden",
+            marginBottom: 20,
           }}
         >
-          {/* Top accent strip */}
           <div
             style={{
               height: 3,
               background: `linear-gradient(90deg, transparent, ${barColor}, transparent)`,
             }}
           />
-
           <div style={{ padding: "2.5rem 2rem" }}>
-            {/* Trophy orb */}
+            {/* Trophy */}
             <div
               style={{
                 display: "flex",
@@ -345,7 +338,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* Score bar */}
+            {/* Accuracy bar */}
             <div style={{ marginBottom: "2rem" }}>
               <div
                 style={{
@@ -395,7 +388,7 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* Stats row */}
+            {/* Stats */}
             <div
               style={{
                 display: "grid",
@@ -426,12 +419,12 @@ export default function ResultsPage() {
                   bg: "rgba(234,120,30,.08)",
                   border: "rgba(234,120,30,.2)",
                 },
-              ].map((stat) => (
+              ].map((s) => (
                 <div
-                  key={stat.label}
+                  key={s.label}
                   style={{
-                    background: stat.bg,
-                    border: `0.5px solid ${stat.border}`,
+                    background: s.bg,
+                    border: `0.5px solid ${s.border}`,
                     borderRadius: 10,
                     padding: "12px 8px",
                     textAlign: "center",
@@ -441,11 +434,11 @@ export default function ResultsPage() {
                     style={{
                       fontSize: 22,
                       fontFamily: "Georgia, serif",
-                      color: stat.color,
+                      color: s.color,
                       lineHeight: 1,
                     }}
                   >
-                    {stat.value}
+                    {s.value}
                   </div>
                   <div
                     style={{
@@ -456,7 +449,7 @@ export default function ResultsPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    {stat.label}
+                    {s.label}
                   </div>
                 </div>
               ))}
@@ -471,7 +464,7 @@ export default function ResultsPage() {
               }}
             />
 
-            {/* Action buttons */}
+            {/* Buttons */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button
                 onClick={() => router.push(`/lobby/${lobbyId}`)}
@@ -507,182 +500,307 @@ export default function ResultsPage() {
               >
                 <Users size={15} /> Back to Lobby
               </button>
-
               <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={() => router.push("/home")}
-                  style={{
-                    flex: 1,
-                    padding: "11px 0",
-                    borderRadius: 10,
-                    background: "transparent",
-                    border: "0.5px solid rgba(234,120,30,.25)",
-                    color: "rgba(245,240,232,.6)",
-                    fontSize: 13,
-                    fontFamily: "Georgia, serif",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 7,
-                    transition:
-                      "background .2s, border-color .2s, transform .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(234,120,30,.07)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(234,120,30,.5)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "#f5f0e8";
-                    (e.currentTarget as HTMLButtonElement).style.transform =
-                      "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "transparent";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(234,120,30,.25)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "rgba(245,240,232,.6)";
-                    (e.currentTarget as HTMLButtonElement).style.transform =
-                      "translateY(0)";
-                  }}
-                >
-                  <Home size={13} /> Home
-                </button>
-
-                <button
-                  onClick={() => router.push(`/lobby/${lobbyId}`)}
-                  style={{
-                    flex: 1,
-                    padding: "11px 0",
-                    borderRadius: 10,
-                    background: "transparent",
-                    border: "0.5px solid rgba(234,120,30,.25)",
-                    color: "rgba(245,240,232,.6)",
-                    fontSize: 13,
-                    fontFamily: "Georgia, serif",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 7,
-                    transition:
-                      "background .2s, border-color .2s, transform .15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "rgba(234,120,30,.07)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(234,120,30,.5)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "#f5f0e8";
-                    (e.currentTarget as HTMLButtonElement).style.transform =
-                      "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "transparent";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(234,120,30,.25)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "rgba(245,240,232,.6)";
-                    (e.currentTarget as HTMLButtonElement).style.transform =
-                      "translateY(0)";
-                  }}
-                >
-                  <RotateCcw size={14} /> Play Again
-                </button>
+                {[
+                  {
+                    label: "Home",
+                    icon: <Home size={13} />,
+                    onClick: () => router.push("/home"),
+                  },
+                  {
+                    label: "Play Again",
+                    icon: <RotateCcw size={14} />,
+                    onClick: () => router.push(`/lobby/${lobbyId}`),
+                  },
+                ].map((btn) => (
+                  <button
+                    key={btn.label}
+                    onClick={btn.onClick}
+                    style={{
+                      flex: 1,
+                      padding: "11px 0",
+                      borderRadius: 10,
+                      background: "transparent",
+                      border: "0.5px solid rgba(234,120,30,.25)",
+                      color: "rgba(245,240,232,.6)",
+                      fontSize: 13,
+                      fontFamily: "Georgia, serif",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      transition:
+                        "background .2s, border-color .2s, color .2s, transform .15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement;
+                      b.style.background = "rgba(234,120,30,.07)";
+                      b.style.borderColor = "rgba(234,120,30,.5)";
+                      b.style.color = "#f5f0e8";
+                      b.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement;
+                      b.style.background = "transparent";
+                      b.style.borderColor = "rgba(234,120,30,.25)";
+                      b.style.color = "rgba(245,240,232,.6)";
+                      b.style.transform = "translateY(0)";
+                    }}
+                  >
+                    {btn.icon} {btn.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Question Review */}
+        {/* ── Question Review ── */}
         {reviewData.length > 0 && (
-          <div style={{ marginBottom: "2rem" }}>
-            {/* HEADER ONCE */}
-            <div
-              style={{
-                fontSize: 12,
-                letterSpacing: ".12em",
-                textTransform: "uppercase",
-                color: "#ea781e",
-                marginBottom: 14,
-              }}
-            >
-              Question Review
-            </div>
-
-            {/* LIST */}
+          <div style={{ marginBottom: 32 }}>
+            {/* Section header */}
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: 12,
-                maxHeight: 400,
-                overflowY: "auto",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 16,
+                marginTop: 8,
               }}
             >
+              <span
+                style={{
+                  fontSize: 10,
+                  letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  color: "#ea781e",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Question Review
+              </span>
+              <div
+                style={{
+                  flex: 1,
+                  height: "0.5px",
+                  background: "rgba(234,120,30,.15)",
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    color: "#97C459",
+                    background: "rgba(59,109,17,.12)",
+                    border: "0.5px solid rgba(59,109,17,.25)",
+                    borderRadius: 100,
+                    padding: "3px 10px",
+                  }}
+                >
+                  <CheckCircle size={10} /> {score} correct
+                </span>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    color: "#F09595",
+                    background: "rgba(163,45,45,.12)",
+                    border: "0.5px solid rgba(163,45,45,.25)",
+                    borderRadius: 100,
+                    padding: "3px 10px",
+                  }}
+                >
+                  <XCircle size={10} /> {total - score} wrong
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {reviewData.map((item, index) => (
                 <div
                   key={index}
                   style={{
-                    background: "rgba(245,240,232,.03)",
-                    border: `1px solid ${
-                      item.isCorrect
-                        ? "rgba(59,109,17,.4)"
-                        : "rgba(163,45,45,.4)"
-                    }`,
-                    borderRadius: 12,
-                    padding: "14px",
+                    borderRadius: 14,
+                    background: "rgba(13,13,13,.88)",
+                    border: `0.5px solid ${item.isCorrect ? "rgba(59,109,17,.25)" : "rgba(163,45,45,.25)"}`,
+                    overflow: "hidden",
                   }}
                 >
+                  {/* Question header */}
                   <div
                     style={{
-                      color: "#f5f0e8",
-                      marginBottom: 10,
-                      fontSize: 14,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Q{index + 1}. {item.question}
-                  </div>
-
-                  <div
-                    style={{
-                      color: item.isCorrect ? "#97C459" : "#F09595",
-                      fontSize: 13,
-                      marginBottom: 6,
-                    }}
-                  >
-                    Your Answer: {item.userAnswer}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#ea781e",
-                      fontSize: 13,
-                    }}
-                  >
-                    Correct Answer: {item.correctAnswer}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: "inline-block",
-                      padding: "4px 10px",
-                      borderRadius: 999,
-                      fontSize: 11,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      padding: "13px 16px",
                       background: item.isCorrect
-                        ? "rgba(59,109,17,.15)"
-                        : "rgba(163,45,45,.15)",
-                      color: item.isCorrect ? "#97C459" : "#F09595",
+                        ? "rgba(59,109,17,.06)"
+                        : "rgba(163,45,45,.06)",
+                      borderBottom: `0.5px solid ${item.isCorrect ? "rgba(59,109,17,.12)" : "rgba(163,45,45,.12)"}`,
                     }}
                   >
-                    {item.isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                    {/* Index badge */}
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 7,
+                        background: item.isCorrect
+                          ? "rgba(59,109,17,.2)"
+                          : "rgba(163,45,45,.2)",
+                        border: `0.5px solid ${item.isCorrect ? "rgba(59,109,17,.4)" : "rgba(163,45,45,.35)"}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        color: item.isCorrect ? "#97C459" : "#F09595",
+                        flexShrink: 0,
+                        fontFamily: "Georgia, serif",
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    {/* Question text */}
+                    <p
+                      style={{
+                        flex: 1,
+                        color: "#f5f0e8",
+                        fontSize: 14,
+                        fontFamily: "Georgia, serif",
+                        lineHeight: 1.5,
+                        margin: 0,
+                        paddingTop: 2,
+                      }}
+                    >
+                      {item.question}
+                    </p>
+                    {/* Result icon */}
+                    <div style={{ flexShrink: 0, paddingTop: 3 }}>
+                      {item.isCorrect ? (
+                        <CheckCircle size={16} color="#97C459" />
+                      ) : (
+                        <XCircle size={16} color="#F09595" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Answers body */}
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {/* Your answer */}
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: ".09em",
+                          textTransform: "uppercase",
+                          color: "rgba(245,240,232,.28)",
+                          whiteSpace: "nowrap",
+                          minWidth: 82,
+                        }}
+                      >
+                        Your answer
+                      </span>
+                      <div
+                        style={{
+                          flex: 1,
+                          padding: "7px 12px",
+                          borderRadius: 8,
+                          background: item.isCorrect
+                            ? "rgba(59,109,17,.1)"
+                            : "rgba(163,45,45,.1)",
+                          border: `0.5px solid ${item.isCorrect ? "rgba(59,109,17,.28)" : "rgba(163,45,45,.28)"}`,
+                          color: item.isCorrect ? "#97C459" : "#F09595",
+                          fontSize: 13,
+                          fontFamily: "Georgia, serif",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 8,
+                        }}
+                      >
+                        <span>
+                          {item.userAnswer || (
+                            <span style={{ opacity: 0.4, fontStyle: "italic" }}>
+                              No answer
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            opacity: 0.7,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.isCorrect ? "✓ Correct" : "✗ Wrong"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Correct answer — only when wrong */}
+                    {!item.isCorrect && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 10,
+                            letterSpacing: ".09em",
+                            textTransform: "uppercase",
+                            color: "rgba(245,240,232,.28)",
+                            whiteSpace: "nowrap",
+                            minWidth: 82,
+                          }}
+                        >
+                          Correct
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            padding: "7px 12px",
+                            borderRadius: 8,
+                            background: "rgba(59,109,17,.1)",
+                            border: "0.5px solid rgba(59,109,17,.28)",
+                            color: "#97C459",
+                            fontSize: 13,
+                            fontFamily: "Georgia, serif",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
+                          }}
+                        >
+                          <span>{item.correctAnswer}</span>
+                          <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -693,7 +811,7 @@ export default function ResultsPage() {
         <p
           style={{
             textAlign: "center",
-            marginTop: 16,
+            marginBottom: 24,
             fontSize: 11,
             color: "rgba(245,240,232,.18)",
             fontFamily: "Georgia, serif",
@@ -703,7 +821,6 @@ export default function ResultsPage() {
         </p>
       </div>
 
-      {/* ── Keyframes ── */}
       <style>{`
         @keyframes qrScan    { 0%{top:-2%} 100%{top:102%} }
         @keyframes qrBlink   { 0%,100%{opacity:1} 50%{opacity:0} }
