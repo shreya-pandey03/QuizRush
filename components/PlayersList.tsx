@@ -1,9 +1,9 @@
-import { useLobbyStore } from "@/store/lobbyStore";
+import { useLeaderboardStore } from "@/store/leaderboardStore";
 
 export default function PlayersList() {
-  const players = useLobbyStore((s) => s.lobby?.players);
-
-  const sortedPlayers = [...(players ?? [])].sort((a, b) => b.score - a.score);
+  const players = useLeaderboardStore((s) => s.leaderboard);
+  console.log("PLAYERS LIST RENDER", players);
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   return (
     <div>

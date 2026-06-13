@@ -71,9 +71,9 @@ export default function useSocket({
     socket.on("next-question", (question) => {
       setQuestion(question);
     });
-
+    
     socket.on("leaderboard-update", (players) => {
-      console.log("LEADERBOARD UPDATE", players);
+      console.log("LEADERBOARD UPDATE RECEIVED", players);
 
       setLeaderboard(players);
     });

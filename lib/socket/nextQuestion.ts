@@ -15,7 +15,7 @@ export function nextQuestion(io: Server, lobbyId: string) {
     player.answered = false;
   });
 
-  const question = lobby.questions[lobby.currentQuestionIndex];
+  const question = lobby.questions?.[lobby.currentQuestionIndex];
 
   if (!question) {
     return;

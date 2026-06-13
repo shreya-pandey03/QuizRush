@@ -31,11 +31,11 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
   const [quizStarted, setQuizStarted] = useState(false);
 
   // Redirect to result page when quiz is finished
-useEffect(() => {
-  if (finished) {
-    router.replace("/quiz/result");
-  }
-}, [finished]);
+  useEffect(() => {
+    if (finished) {
+      router.replace(`/quiz/${lobbyId}/results`);
+    }
+  }, [finished, lobbyId, router]);
 
   // Socket connection
   useSocket({

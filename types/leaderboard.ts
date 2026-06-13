@@ -1,5 +1,3 @@
-
-
 export type LeaderboardPlayer = {
   id: string;
   name: string;

@@ -674,7 +674,7 @@ export default function QuizPage() {
           </div>
 
           {/* Answer review */}
-          <div
+          {/* <div
             style={{
               fontSize: 10,
               letterSpacing: ".13em",
@@ -684,7 +684,7 @@ export default function QuizPage() {
             }}
           >
             Answer Review
-          </div>
+          </div> */}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {questions.map((q, index) => {

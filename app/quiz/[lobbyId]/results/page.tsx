@@ -24,15 +24,19 @@ export default function ResultsPage() {
 
   const lobbyId = params.lobbyId as string;
   const [reviewData, setReviewData] = useState<ReviewItem[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
     const data = localStorage.getItem(`review-${lobbyId}`);
-    if (data) setReviewData(JSON.parse(data));
+
+    if (data) {
+      setReviewData(JSON.parse(data));
+    }
+
+    setLoading(false);
   }, [lobbyId]);
 
-  if (!mounted) return null;
+  if (loading) return null;
 
   const score = reviewData.filter((q) => q.isCorrect).length;
   const total = reviewData.length;

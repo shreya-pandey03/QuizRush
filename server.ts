@@ -4,8 +4,6 @@ import { playerHandlers } from "@/lib/socket/playerHandlers";
 import { startTimer } from "@/lib/socket/timerEngine";
 import { scoreHandlers } from "@/lib/socket/scoreHandlers";
 
-
-
 const io = new Server(3002, {
   cors: {
     origin: "http://localhost:3001",

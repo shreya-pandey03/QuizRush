@@ -13,8 +13,6 @@ export function scoreHandlers(io: Server, socket: Socket) {
       playerId: string;
       answer: string;
     }) => {
-
-
       const lobby = gameStore.get(lobbyId);
 
       if (!lobby) {
@@ -70,6 +68,13 @@ export function scoreHandlers(io: Server, socket: Socket) {
         [...lobby.players].sort((a, b) => b.score - a.score),
       );
 
+      console.log(
+        "EMITTING LEADERBOARD:",
+        lobby.players.map((p) => ({
+          name: p.name,
+          score: p.score,
+        })),
+      );
       io.to(lobbyId).emit(
         "players-update",
         [...lobby.players].sort((a, b) => b.score - a.score),
