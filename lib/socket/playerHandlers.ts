@@ -13,6 +13,7 @@ type JoinLobbyPayload = {
 };
 
 export function playerHandlers(io: Server, socket: Socket) {
+  //join lobby
   socket.on("join-lobby", async (payload: JoinLobbyPayload) => {
     try {
       const { lobbyId, player } = payload;
@@ -49,7 +50,6 @@ export function playerHandlers(io: Server, socket: Socket) {
           difficulty: "Easy",
         };
 
-        //  store it immediately
         gameStore.set(lobbyId, lobby);
       }
 
@@ -58,29 +58,57 @@ export function playerHandlers(io: Server, socket: Socket) {
       socket.data.lobbyId = lobbyId;
       socket.data.playerId = player.id;
 
-      // REMOVE DUPLICATES
-      lobby.players = lobby.players.filter((p) => p.id !== player.id);
+      // RECONNECT → KEEP SCORE
+      const existingPlayer = lobby.players.find((p) => p.id === player.id);
 
-      // ADD PLAYER
-      lobby.players.push({
-        id: player.id,
-        name: player.name,
-        score: 0,
-        answered: false,
-        socketId: socket.id,
-      });
+      if (existingPlayer) {
+        existingPlayer.socketId = socket.id;
+        existingPlayer.name = player.name;
+      } else {
+        lobby.players.push({
+          id: player.id,
+          name: player.name,
+          score: 0,
+          answered: false,
+          socketId: socket.id,
+        });
+      }
 
       gameStore.set(lobbyId, lobby);
 
+      // UPDATE PLAYERS LIST
       io.to(lobbyId).emit(
         "players-update",
         [...lobby.players].sort((a, b) => b.score - a.score),
       );
 
-      // RESYNC IF GAME STARTED
-      if (lobby.status === "playing") {
+      // RESYNC IF QUIZ IS RUNNING
+      if (
+        lobby.started &&
+        lobby.questions &&
+        lobby.questions.length > 0 &&
+        lobby.currentQuestionIndex >= 0 &&
+        lobby.currentQuestionIndex < lobby.questions.length
+      ) {
+        console.log(
+          "RESYNC PLAYER:",
+          player.name,
+          "QUESTION:",
+          lobby.currentQuestionIndex,
+        );
+
         socket.emit("quiz-started", lobby.questions);
+
         socket.emit("timer-update", lobby.timer);
+
+        socket.emit("next-question", {
+          ...lobby.questions[lobby.currentQuestionIndex],
+        });
+
+        socket.emit(
+          "leaderboard-update",
+          [...lobby.players].sort((a, b) => b.score - a.score),
+        );
       }
     } catch (err) {
       console.error("JOIN LOBBY ERROR:", err);

@@ -1,9 +1,9 @@
 import { Server } from "socket.io";
-import { timers } from "./timers";
 import { gameStore } from "@/lib/socket/gameStore";
 import { db } from "@/drizzle/src/db";
 import { lobbyQuestions } from "@/drizzle/src/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { timers } from "@/store/timerStore";
 
 type Player = {
   id: string;
@@ -128,18 +128,17 @@ export function nextQuestion(io: Server, lobbyId: string) {
 
   lobby.currentQuestionIndex++;
 
-  if (lobby.currentQuestionIndex >= lobby.questions.length) {
-    endGame(io, lobbyId);
+  // Quiz finished
+  if (lobby.currentQuestionIndex >= (lobby.questions?.length ?? 0)) {
+    lobby.started = false;
     lobby.status = "finished";
 
-    io.to(lobbyId).emit("quiz-ended", {
-      leaderboard: [...lobby.players].sort((a, b) => b.score - a.score),
-    });
+    endGame(io, lobbyId);
 
     return;
   }
 
-  // reset player state
+  // Allow players to answer next question
   lobby.players.forEach((p) => {
     p.answered = false;
   });
@@ -180,16 +179,28 @@ export function submitAnswer(
   answer: string,
 ) {
   const lobby = gameStore.get(lobbyId);
+
   if (!lobby) return;
 
-  // ✅ FIX 1: ensure questions exist AND not empty
-  if (!lobby.questions || lobby.questions.length === 0) return;
+  if (!lobby.questions?.length) return;
 
   const question = lobby.questions[lobby.currentQuestionIndex];
-  if (!question) return;
+
+  if (!question) {
+    console.log("QUESTION NOT FOUND");
+    return;
+  }
 
   const player = lobby.players.find((p) => p.id === playerId);
+
   if (!player) return;
+
+  if (player.answered) {
+    console.log("ALREADY ANSWERED");
+    return;
+  }
+
+  player.answered = true;
 
   const isCorrect = answer === question.answer;
 
@@ -197,18 +208,34 @@ export function submitAnswer(
     player.score += 1;
   }
 
-  if (player.answered) return; // prevent double submission
+  console.log("UPDATED SCORE:", player.name, player.score);
 
-  io.to(lobbyId).emit("player-update", lobby.players);
+  io.to(lobbyId).emit(
+    "players-update",
+    [...lobby.players].sort((a, b) => b.score - a.score),
+  );
 }
 
 export function endGame(io: Server, lobbyId: string) {
   const lobby = gameStore.get(lobbyId);
+
   if (!lobby) return;
 
+  console.log("ENDGAME CALLED");
+
+  lobby.started = false;
   lobby.status = "finished";
+
+  console.log(
+    "AFTER END:",
+    lobby.started,
+    lobby.status,
+    lobby.currentQuestionIndex,
+  );
 
   const leaderboard = [...lobby.players].sort((a, b) => b.score - a.score);
 
-  io.to(lobbyId).emit("quiz-ended", { leaderboard });
+  io.to(lobbyId).emit("quiz-ended", {
+    leaderboard,
+  });
 }

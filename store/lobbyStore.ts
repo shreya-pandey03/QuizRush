@@ -6,17 +6,41 @@ type Player = {
   score: number;
 };
 
+type Question = {
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  answer: string;
+};
+
 type Lobby = {
   id: string;
+
   players: Player[];
+
   started: boolean;
+
+  status: "waiting" | "playing" | "finished";
+
+  currentQuestionIndex: number;
+
+  timer: number;
+
+  questions: Question[];
+
+  category: string;
+
+  difficulty: string;
 };
 
 type LobbyStore = {
-  setPlayers(arg0: never[]): unknown;
   lobby: Lobby | null;
 
   setLobby: (lobby: Lobby | null) => void;
+
+  setPlayers: (players: Player[]) => void;
 
   setPlayersFromLobby: (players: Player[]) => void;
 };
@@ -26,7 +50,7 @@ export const useLobbyStore = create<LobbyStore>((set, get) => ({
 
   setLobby: (lobby) => set({ lobby }),
 
-  setPlayersFromLobby: (players) => {
+  setPlayers: (players) => {
     const lobby = get().lobby;
 
     if (!lobby) return;
@@ -37,5 +61,9 @@ export const useLobbyStore = create<LobbyStore>((set, get) => ({
         players,
       },
     });
+  },
+
+  setPlayersFromLobby: (players) => {
+    get().setPlayers(players);
   },
 }));

@@ -34,6 +34,8 @@ export function quizHandlers(io: Server, socket: Socket) {
       }
 
       lobby.started = true;
+      lobby.status = "playing";
+      lobby.currentQuestionIndex = 0;
 
       console.log("EMITTING quiz-started:", lobby.questions.length);
 
@@ -61,12 +63,12 @@ export function quizHandlers(io: Server, socket: Socket) {
     }
 
     console.log("QUESTIONS COUNT:", lobby.questions?.length);
-
     socket.emit("quiz-state", {
       started: lobby.started,
-      questions: lobby.questions,
+      status: lobby.status,
+      questions: lobby.questions ?? [],
+      currentQuestionIndex: lobby.currentQuestionIndex,
+      timer: lobby.timer,
     });
   });
-
 }
-

@@ -28,7 +28,9 @@ export default function QuizLobbyClient({ lobbyId }: Props) {
 
   const leaderboard = useLeaderboardStore((state) => state.leaderboard);
 
-  const [quizStarted, setQuizStarted] = useState(false);
+  console.log("LEADERBOARD STORE:", leaderboard);
+
+  const [quizStarted] = useState(false);
 
   // Redirect to result page when quiz is finished
   useEffect(() => {

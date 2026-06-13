@@ -5,11 +5,7 @@ export type Player = {
   answered: boolean;
 };
 
-export type AnswerKey =
-  | "optionA"
-  | "optionB"
-  | "optionC"
-  | "optionD";
+export type AnswerKey = "optionA" | "optionB" | "optionC" | "optionD";
 
 export type Question = {
   question: string;
@@ -21,22 +17,3 @@ export type Question = {
 
   answer: AnswerKey;
 };
-
-// export type LobbyState = {
-//   lobbyId: string;
-
-//   players: Player[];
-
-//   questions: Question[];
-
-//   currentQuestionIndex: number;
-
-//   started: boolean;
-
-//   timer: number;
-
-//   status:
-//     | "waiting"
-//     | "playing"
-//     | "finished";
-// };

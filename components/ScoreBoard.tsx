@@ -10,6 +10,7 @@ export default function ScoreBoard({
   leaderboard?: PlayerScore[];
 }) {
   const safeLeaderboard = leaderboard ?? [];
+  console.log("SCOREBOARD RECEIVED:", safeLeaderboard);
 
   return (
    <div className="w-full max-w-md mx-auto p-6 bg-gray-800 shadow-lg rounded-2xl">

@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+export const timers = new Map<string, NodeJS.Timeout>();
+
 interface TimerStore {
   timeLeft: number;
 
