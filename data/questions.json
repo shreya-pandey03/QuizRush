@@ -1,0 +1,92 @@
+[
+  {
+    "id": "1",
+    "question": "What is React?",
+    "optionA": "Library",
+    "optionB": "Server",
+    "optionC": "Database",
+    "optionD": "Operating System",
+    "answer": "optionA"
+  },
+  {
+    "id": "2",
+    "question": "What is Bun?",
+    "optionA": "Runtime",
+    "optionB": "Browser",
+    "optionC": "Database",
+    "optionD": "Framework",
+    "answer": "optionA"
+  },
+  {
+    "id": "3",
+    "question": "Which language is primarily used with React?",
+    "optionA": "Python",
+    "optionB": "JavaScript",
+    "optionC": "Java",
+    "optionD": "C++",
+    "answer": "optionB"
+  },
+  {
+    "id": "4",
+    "question": "Which HTML tag is used to create a hyperlink?",
+    "optionA": "<link>",
+    "optionB": "<a>",
+    "optionC": "<href>",
+    "optionD": "<url>",
+    "answer": "optionB"
+  },
+  {
+    "id": "5",
+    "question": "Which company developed TypeScript?",
+    "optionA": "Google",
+    "optionB": "Meta",
+    "optionC": "Microsoft",
+    "optionD": "Amazon",
+    "answer": "optionC"
+  },
+  {
+    "id": "6",
+    "question": "Which database is a NoSQL database?",
+    "optionA": "PostgreSQL",
+    "optionB": "MySQL",
+    "optionC": "SQLite",
+    "optionD": "MongoDB",
+    "answer": "optionD"
+  },
+  {
+    "id": "7",
+    "question": "What does API stand for?",
+    "optionA": "Application Programming Interface",
+    "optionB": "Advanced Program Integration",
+    "optionC": "Application Process Integration",
+    "optionD": "Automated Programming Interface",
+    "answer": "optionA"
+  },
+  {
+    "id": "8",
+    "question": "Which command installs dependencies using Bun?",
+    "optionA": "bun install",
+    "optionB": "bun add all",
+    "optionC": "bun setup",
+    "optionD": "bun fetch",
+    "answer": "optionA"
+  },
+  {
+    "id": "9",
+    "question": "Which protocol does Socket.IO primarily use for real-time communication?",
+    "optionA": "FTP",
+    "optionB": "SMTP",
+    "optionC": "WebSocket",
+    "optionD": "SSH",
+    "answer": "optionC"
+  },
+  {
+    "id": "10",
+    "question": "Which method is commonly used to fetch data in JavaScript?",
+    "optionA": "load()",
+    "optionB": "fetch()",
+    "optionC": "request()",
+    "optionD": "read()",
+    "answer": "optionB"
+  }
+]

@@ -1,0 +1,125 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1779526922900,
+      "tag": "0000_nappy_silver_surfer",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779529993324,
+      "tag": "0001_married_lady_deathstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779534145387,
+      "tag": "0002_dapper_microchip",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779824274462,
+      "tag": "0003_careful_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779824470817,
+      "tag": "0004_woozy_dust",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779897870008,
+      "tag": "0005_nifty_psylocke",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780591602816,
+      "tag": "0006_mixed_justin_hammer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780738197809,
+      "tag": "0007_daily_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780741906784,
+      "tag": "0008_famous_next_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780820194629,
+      "tag": "0009_brainy_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782114673899,
+      "tag": "0010_faithful_toxin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782155356875,
+      "tag": "0011_tearful_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782383648774,
+      "tag": "0012_common_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1782410438802,
+      "tag": "0013_futuristic_turbo",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1782411116188,
+      "tag": "0014_pale_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1782417062682,
+      "tag": "0015_busy_dexter_bennett",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1782586498103,
+      "tag": "0016_yummy_mandrill",
+      "breakpoints": true
+    }
+  ]
+}
