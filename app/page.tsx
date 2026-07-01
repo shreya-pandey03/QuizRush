@@ -723,12 +723,12 @@ export default function LandingPage() {
             ranks, earn trophies, and prove you're the smartest in the room.
           </p>
           <div className="qr-cta">
-            <Link href="/signup" className="qr-btn-primary">
+            {/* <Link href="/signup" className="qr-btn-primary">
               <IconGamepad /> Play now — it&apos;s free
-            </Link>
-            <Link href="/home" className="qr-btn-secondary">
-              <IconPlay /> Watch a live match
-            </Link>
+            </Link> */}
+            {/* <Link href="/lobby/live" className="qr-btn-secondary">
+             Watch live match
+               </Link> */}
           </div>
 
           {/* 3D Orb */}
@@ -906,7 +906,7 @@ export default function LandingPage() {
               href="https://github.com/shreya-pandey03"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-stone-300  hover:text-orange-800 font-semibold transition-colors"
+              className="text-stone-300  hover:text-orange-600 font-semibold transition-colors"
             >
               Shreya
             </a>
