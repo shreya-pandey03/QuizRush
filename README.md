@@ -72,7 +72,6 @@ Deployment: Vercel + Render (Socket Server)
 
 📁 Project Structure
 multiplayer-quiz-game/
-
 ├── app/
 │
 │   ├── (dashboard)/
