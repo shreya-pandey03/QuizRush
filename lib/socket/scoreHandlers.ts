@@ -88,7 +88,7 @@ export function scoreHandlers(io: Server, socket: Socket) {
       .map((p) => ({
         id: p.id,
         name: p.name,
-         photo: p.photo,
+        photo: p.photo,
         score: lobby.scores?.[p.id] ?? 0,
         correctAnswers: lobby.correctAnswers?.[p.id] ?? 0,
         bonus: lobby.bonuses?.[p.id] ?? 0,
@@ -190,23 +190,65 @@ export function scoreHandlers(io: Server, socket: Socket) {
     }
 
     // ACHIEVEMENTS
-
     try {
-      if (score === lobby.questions.length) {
+      const existingAchievements = await db
+        .select()
+        .from(achievements)
+        .where(eq(achievements.userId, playerId));
+
+      const unlocked = new Set(existingAchievements.map((a) => a.badge));
+
+      // Perfect Score
+      if (score === lobby.questions.length && !unlocked.has("Perfect Score")) {
         await db.insert(achievements).values({
           userId: playerId,
           badge: "Perfect Score",
         });
+
+        unlocked.add("Perfect Score");
       }
 
-      if (score >= Math.ceil(lobby.questions.length * 0.8)) {
+      // Quiz Master
+      if (
+        score >= Math.ceil(lobby.questions.length * 0.8) &&
+        !unlocked.has("Quiz Master")
+      ) {
         await db.insert(achievements).values({
           userId: playerId,
           badge: "Quiz Master",
         });
+
+        unlocked.add("Quiz Master");
       }
 
-      if (isWinner) {
+      // Good Try
+      if (
+        score >= Math.ceil(lobby.questions.length * 0.5) &&
+        !unlocked.has("Good Try")
+      ) {
+        await db.insert(achievements).values({
+          userId: playerId,
+          badge: "Good Try",
+        });
+
+        unlocked.add("Good Try");
+      }
+
+      // Practice Mode
+      if (
+        score < Math.ceil(lobby.questions.length * 0.5) &&
+        !unlocked.has("Practice Mode")
+      ) {
+        await db.insert(achievements).values({
+          userId: playerId,
+          badge: "Practice Mode",
+        });
+
+        unlocked.add("Practice Mode");
+      }
+
+      // Champion
+      if (isWinner && !unlocked.has("Champion")) {
         await db.insert(achievements).values({
           userId: playerId,
           badge: "Champion",

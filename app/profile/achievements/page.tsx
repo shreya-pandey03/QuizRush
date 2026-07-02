@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 type BadgeKey = "perfect" | "quiz_master" | "good_try" | "practice_mode";
 
 const BADGES: Record<
-  string,
+  BadgeKey,
   {
     title: string;
     description: string;
@@ -23,6 +24,7 @@ const BADGES: Record<
     bg: "rgba(250,199,117,.12)",
     border: "rgba(250,199,117,.3)",
   },
+
   quiz_master: {
     title: "Quiz Master",
     description: "You scored 80% or higher.",
@@ -31,14 +33,16 @@ const BADGES: Record<
     bg: "rgba(234,120,30,.12)",
     border: "rgba(234,120,30,.3)",
   },
+
   good_try: {
-    title: "Good Try",
-    description: "You scored 50% or higher. Keep improving!",
-    emoji: "👍",
+    title: "Champion",
+    description: "You won a quiz match.",
+    emoji: "👑",
     color: "#60b8f5",
     bg: "rgba(96,184,245,.1)",
     border: "rgba(96,184,245,.28)",
   },
+
   practice_mode: {
     title: "Practice Mode",
     description: "Keep practising to improve your score.",
@@ -51,7 +55,7 @@ const BADGES: Record<
 
 function getBadge(key: string) {
   return (
-    BADGES[key] ?? {
+    BADGES[key as BadgeKey] ?? {
       title: key,
       description: "Achievement unlocked through gameplay.",
       emoji: "★",
@@ -63,20 +67,53 @@ function getBadge(key: string) {
 }
 
 export default function AchievementsPage() {
+  const { data: session } = useSession();
+
   const [badges, setBadges] = useState<BadgeKey[]>([]);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("achievements");
-      setBadges(stored ? JSON.parse(stored) : []);
-    } catch (err) {
-      console.error("Failed to load achievements", err);
-      setBadges([]);
-    }
-  }, []);
+    async function loadAchievements() {
+      if (!session?.user?.email) return;
 
-  // all possible badges for the "locked" preview
+      try {
+        const res = await fetch(
+          `/api/achievements?userId=${encodeURIComponent(session.user.email)}`,
+        );
+
+        const data = await res.json();
+
+        const mapped: BadgeKey[] = [];
+
+        data.forEach((item: { badge: string }) => {
+          if (item.badge === "Perfect Score") {
+            mapped.push("perfect");
+          }
+
+          if (item.badge === "Quiz Master") {
+            mapped.push("quiz_master");
+          }
+
+          if (item.badge === "Champion") {
+            mapped.push("good_try");
+          }
+        });
+
+        // remove duplicates
+        const uniqueBadges = [...new Set(mapped)];
+
+        setBadges(uniqueBadges);
+      } catch (err) {
+        console.error("Failed to load achievements", err);
+        setBadges([]);
+      }
+    }
+
+    loadAchievements();
+  }, [session]);
+
+  // all possible badges for locked preview
   const ALL_KEYS = Object.keys(BADGES) as BadgeKey[];
+
   const lockedBadges = ALL_KEYS.filter((k) => !badges.includes(k));
 
   return (
