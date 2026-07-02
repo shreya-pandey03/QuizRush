@@ -23,7 +23,13 @@ export default function DashboardLayout({
       }}
     >
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div
+        className="hidden md:block"
+        style={{
+          width: 220,
+          flexShrink: 0,
+        }}
+      >
         <SideBar />
       </div>
 
