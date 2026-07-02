@@ -23,23 +23,18 @@ export default function SideBar() {
         width: "220px",
         minWidth: "220px",
         maxWidth: "220px",
-
-        minHeight: "100vh",
+        height: "100vh",
         background: "#0a0a0a",
         borderRight: "0.5px solid rgba(234,120,30,.15)",
-
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-
         padding: "1rem",
-        position: "relative",
-
+        position: "sticky",
+        top: 0,
         flexShrink: 0,
-
         overflowX: "hidden",
         overflowY: "auto",
-
         boxSizing: "border-box",
       }}
     >

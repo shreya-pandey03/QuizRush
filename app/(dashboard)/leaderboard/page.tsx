@@ -74,7 +74,6 @@ export default async function LeaderboardPage() {
             "radial-gradient(circle at top center, rgba(234,120,30,.12), transparent 60%)",
         }}
       />
-
       <div
         style={{
           position: "relative",
@@ -125,79 +124,123 @@ export default async function LeaderboardPage() {
             background: "rgba(234,120,30,.05)",
             border: "0.5px solid rgba(234,120,30,.15)",
             borderRadius: 24,
-            overflow: "hidden",
             backdropFilter: "blur(10px)",
+            overflow: "hidden",
           }}
         >
-          {/* Header */}
+          {/* Horizontal scroll wrapper */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "90px 1fr 140px 140px",
-              padding: "18px 24px",
-              borderBottom: "0.5px solid rgba(234,120,30,.15)",
-              color: "#ea781e",
-              fontSize: 12,
-              letterSpacing: ".15em",
-              textTransform: "uppercase",
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
             }}
           >
-            <div>Rank</div>
-            <div>Player</div>
-            <div>Games</div>
-            <div>Score</div>
-          </div>
-
-          {/* Rows */}
-          {leaderboard.map((p, index) => {
-            const medal =
-              index === 0
-                ? "🥇"
-                : index === 1
-                  ? "🥈"
-                  : index === 2
-                    ? "🥉"
-                    : `#${index + 1}`;
-
-            return (
-              <div
-                key={p.userId}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "90px 1fr 140px 140px",
-                  alignItems: "center",
-                  padding: "20px 24px",
-                  borderBottom:
-                    index !== leaderboard.length - 1
-                      ? "0.5px solid rgba(245,240,232,.05)"
-                      : "none",
-                }}
-              >
-                <div style={{ color: "#ea781e", fontWeight: 700 }}>{medal}</div>
-
-                <div style={{ color: "#f5f0e8" }}>{p.userId}</div>
-
-                <div style={{ color: "rgba(245,240,232,.7)" }}>{p.games}</div>
-
-                <div style={{ color: "#ea781e", fontWeight: 700 }}>
-                  {p.score} pts
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Empty state */}
-          {leaderboard.length === 0 && (
             <div
               style={{
-                padding: 60,
-                textAlign: "center",
-                color: "rgba(245,240,232,.45)",
+                minWidth: 620,
               }}
             >
-              No leaderboard data yet.
+              {/* Header */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "90px 1fr 120px 120px",
+                  padding: "18px 24px",
+                  borderBottom: "0.5px solid rgba(234,120,30,.15)",
+                  color: "#ea781e",
+                  fontSize: 12,
+                  letterSpacing: ".15em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <div>Rank</div>
+                <div>Player</div>
+                <div>Games</div>
+                <div>Score</div>
+              </div>
+
+              {/* Rows */}
+              {leaderboard.map((p, index) => {
+                const medal =
+                  index === 0
+                    ? "🥇"
+                    : index === 1
+                      ? "🥈"
+                      : index === 2
+                        ? "🥉"
+                        : `#${index + 1}`;
+
+                return (
+                  <div
+                    key={p.userId}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "90px 1fr 120px 120px",
+                      alignItems: "center",
+                      padding: "20px 24px",
+                      borderBottom:
+                        index !== leaderboard.length - 1
+                          ? "0.5px solid rgba(245,240,232,.05)"
+                          : "none",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#ea781e",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {medal}
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#f5f0e8",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        paddingRight: 20,
+                      }}
+                    >
+                      {p.userId}
+                    </div>
+
+                    <div
+                      style={{
+                        color: "rgba(245,240,232,.7)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {p.games}
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#ea781e",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {p.score} pts
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Empty state */}
+              {leaderboard.length === 0 && (
+                <div
+                  style={{
+                    padding: 60,
+                    textAlign: "center",
+                    color: "rgba(245,240,232,.45)",
+                  }}
+                >
+                  No leaderboard data yet.
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </main>
