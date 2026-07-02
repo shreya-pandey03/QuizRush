@@ -254,8 +254,20 @@ Follow these steps:
    ```bash
    git checkout -b feat/your-feature
 
-🔗 Live
 
+   
+---
+
+# 📜 License (clean version)
+
+```md id="license1"
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+You are free to use, modify, and distribute this project with attribution.
+
+🔗 Live
 👉 https://quiz-rush-lac.vercel.app
 
 Built with ❤️ for real-time competition lovers
