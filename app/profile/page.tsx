@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const { data: session } = useSession();
 
-
   const [stats, setStats] = useState({
     gamesPlayed: 0,
     totalScore: 0,
@@ -42,10 +41,13 @@ export default function ProfilePage() {
         winRate: data.winRate ?? 0,
       });
       setHistoryCount(data.historyCount ?? 0);
-      const achievements = JSON.parse(
-        localStorage.getItem("achievements") || "[]",
+      const achievementsRes = await fetch(
+        `/api/achievements?userId=${encodeURIComponent(session.user.email!)}`,
       );
-      setAchievementCount(achievements.length);
+
+      const achievementsData = await achievementsRes.json();
+
+      setAchievementCount(achievementsData.length);
     }
     loadProfile();
   }, [session]);
