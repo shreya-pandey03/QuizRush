@@ -18,26 +18,33 @@ export default function SideBar() {
   const pathname = usePathname();
 
   return (
-    <div
-      style={{
-        width: "220px",
-        minWidth: "220px",
-        maxWidth: "220px",
-        height: "100vh",
-        background: "#0a0a0a",
-        borderRight: "0.5px solid rgba(234,120,30,.15)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "1rem",
-        position: "sticky",
-        top: 0,
-        flexShrink: 0,
-        overflowX: "hidden",
-        overflowY: "auto",
-        boxSizing: "border-box",
-      }}
-    >
+<div
+  style={{
+    width: "220px",
+    minWidth: "220px",
+    maxWidth: "220px",
+
+    height: "100%",
+
+    background: "#0a0a0a",
+    borderRight: "0.5px solid rgba(234,120,30,.15)",
+
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+
+    padding: "1rem",
+
+    position: "relative",
+
+    flexShrink: 0,
+
+    overflowX: "hidden",
+    overflowY: "auto",
+
+    boxSizing: "border-box",
+  }}
+>
       {/* ── Subtle inner glow ── */}
       <div
         style={{
