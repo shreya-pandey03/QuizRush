@@ -903,7 +903,7 @@ export default function LandingPage() {
           <p className="text-[12px] text-stone-400">
             Built with ❤️ by  {" "}
             <a
-              href="https://github.com/shreya-pandey03"
+              // href="https://github.com/shreya-pandey03"
               target="_blank"
               rel="noopener noreferrer"
               className="text-stone-300  hover:text-orange-600 font-semibold transition-colors"
