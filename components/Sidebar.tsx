@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Home, Users, User, Trophy, LogOut } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { signOut, useSession } from "next-auth/react";
+import { Home, LogOut, Trophy, User, Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+type SideBarProps = {
+  closeSidebar?: () => void;
+};
 
 const NAV_LINKS = [
   { href: "/home", label: "Home", icon: <Home size={15} /> },
@@ -13,39 +17,31 @@ const NAV_LINKS = [
   { href: "/leaderboard", label: "Leaderboard", icon: <Trophy size={15} /> },
 ];
 
-export default function SideBar() {
+export default function SideBar({ closeSidebar }: SideBarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
 
   return (
-<div
-  style={{
-    width: "220px",
-    minWidth: "220px",
-    maxWidth: "220px",
-
-    height: "100%",
-
-    background: "#0a0a0a",
-    borderRight: "0.5px solid rgba(234,120,30,.15)",
-
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-
-    padding: "1rem",
-
-    position: "relative",
-
-    flexShrink: 0,
-
-    overflowX: "hidden",
-    overflowY: "auto",
-
-    boxSizing: "border-box",
-  }}
->
-      {/* ── Subtle inner glow ── */}
+    <div
+      style={{
+        width: "220px",
+        minWidth: "220px",
+        maxWidth: "220px",
+        height: "100%",
+        background: "#0a0a0a",
+        borderRight: "0.5px solid rgba(234,120,30,.15)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "1rem",
+        position: "relative",
+        flexShrink: 0,
+        overflowX: "hidden",
+        overflowY: "auto",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Glow */}
       <div
         style={{
           position: "absolute",
@@ -62,43 +58,58 @@ export default function SideBar() {
 
       {/* TOP */}
       <div style={{ position: "relative", zIndex: 1 }}>
-        {/* Logo */}
-        <div style={{ marginBottom: "2rem" }}>
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "2rem",
+          }}
+        >
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 7,
-              marginBottom: 4,
-              overflow: "hidden",
             }}
           >
             <span
               style={{
                 width: 7,
                 height: 7,
-                minWidth: 7,
                 borderRadius: "50%",
                 background: "#ea781e",
-                display: "inline-block",
                 animation: "sbBlink 1.5s ease-in-out infinite",
               }}
             />
 
             <span
               style={{
-                fontSize: "clamp(14px, 2vw, 20px)",
+                fontSize: "18px",
                 letterSpacing: ".15em",
                 textTransform: "uppercase",
                 color: "#ea781e",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
               }}
             >
               QuizRush
             </span>
           </div>
+
+          {closeSidebar && (
+            <button
+              onClick={closeSidebar}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#f5f0e8",
+                fontSize: 24,
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Divider */}
@@ -130,6 +141,7 @@ export default function SideBar() {
                 <li key={href}>
                   <Link
                     href={href}
+                    onClick={() => closeSidebar?.()}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -150,9 +162,6 @@ export default function SideBar() {
                       fontSize: 13,
                       fontFamily: "Georgia, serif",
                       textDecoration: "none",
-
-                      overflow: "hidden",
-
                       transition: "background .2s, color .2s, border-color .2s",
                     }}
                   >
@@ -168,10 +177,10 @@ export default function SideBar() {
 
                     <span
                       style={{
+                        flex: 1,
                         overflow: "hidden",
                         whiteSpace: "nowrap",
                         textOverflow: "ellipsis",
-                        flex: 1,
                       }}
                     >
                       {label}
@@ -184,7 +193,6 @@ export default function SideBar() {
                           height: 5,
                           borderRadius: "50%",
                           background: "#ea781e",
-                          flexShrink: 0,
                           animation: "sbBlink 1.5s ease-in-out infinite",
                         }}
                       />
@@ -218,7 +226,6 @@ export default function SideBar() {
               borderRadius: 10,
               background: "rgba(234,120,30,.05)",
               border: "0.5px solid rgba(234,120,30,.15)",
-              overflow: "hidden",
             }}
           >
             <Avatar
@@ -226,7 +233,6 @@ export default function SideBar() {
                 width: 30,
                 height: 30,
                 border: "1px solid rgba(234,120,30,.35)",
-                flexShrink: 0,
               }}
             >
               <AvatarImage src={session.user.image ?? undefined} />
@@ -235,29 +241,18 @@ export default function SideBar() {
                 style={{
                   background:
                     "radial-gradient(circle at 35% 35%, #f5a55a, #ea781e 55%, #7a3a0a)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
                   color: "#fff",
-                  fontWeight: 600,
                 }}
               >
                 {session.user.name?.charAt(0).toUpperCase() ?? "P"}
               </AvatarFallback>
             </Avatar>
 
-            <div
-              style={{
-                minWidth: 0,
-                flex: 1,
-              }}
-            >
+            <div style={{ minWidth: 0, flex: 1 }}>
               <p
                 style={{
                   color: "#f5f0e8",
                   fontSize: 13,
-                  fontFamily: "Georgia, serif",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -290,7 +285,11 @@ export default function SideBar() {
             }}
           >
             <button
-              onClick={() => signOut({ callbackUrl: "/signup" })}
+              onClick={() =>
+                signOut({
+                  callbackUrl: "/signup",
+                })
+              }
               style={{
                 width: "100%",
                 display: "flex",
@@ -299,18 +298,11 @@ export default function SideBar() {
                 gap: 8,
                 padding: "9px 0",
                 borderRadius: 8,
-
                 background: "rgba(163,45,45,.15)",
                 border: "0.5px solid rgba(163,45,45,.35)",
-
                 color: "#F09595",
                 fontSize: 12,
-                fontFamily: "Georgia, serif",
-
                 cursor: "pointer",
-                whiteSpace: "nowrap",
-
-                transition: "all .2s ease",
               }}
             >
               <LogOut size={14} />
@@ -321,11 +313,11 @@ export default function SideBar() {
       )}
 
       <style>{`
-    @keyframes sbBlink {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-  `}</style>
+        @keyframes sbBlink {
+          0%,100% { opacity:1; }
+          50% { opacity:.3; }
+        }
+      `}</style>
     </div>
   );
 }

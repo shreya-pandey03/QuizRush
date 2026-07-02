@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
-import SideBar from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebar";
 
 export default function DashboardLayout({
   children,
@@ -14,15 +14,11 @@ export default function DashboardLayout({
   return (
     <div
       style={{
-        display: "flex",
         minHeight: "100vh",
-        width: "100%",
-        overflowX: "hidden",
         background: "#0a0a0a",
-        position: "relative",
       }}
     >
-      {/* Sidebar opened by ☰ */}
+      {/* Sidebar Drawer */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -30,8 +26,7 @@ export default function DashboardLayout({
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,.6)",
-            zIndex: 999,
-            display: "flex",
+            zIndex: 1000,
           }}
         >
           <div
@@ -43,34 +38,22 @@ export default function DashboardLayout({
               overflowY: "auto",
             }}
           >
-            <SideBar />
+            <Sidebar closeSidebar={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <div
+      <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+      <main
         style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflowX: "hidden",
+          padding: "1.5rem",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
-        <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-        <main
-          style={{
-            flex: 1,
-            minWidth: 0,
-            overflowX: "hidden",
-            padding: "1.5rem",
-          }}
-        >
-          {children}
-        </main>
-      </div>
+        {children}
+      </main>
     </div>
   );
 }
