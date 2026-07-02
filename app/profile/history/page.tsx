@@ -41,7 +41,7 @@ export default function StatsPage() {
           accuracy: data.accuracy ?? 0,
           winRate: data.winRate ?? 0,
           xp: data.xp ?? 0,
-          level: data.level ?? 1,
+          level: Math.floor((data.xp ?? 0) / 1000) + 1,
         });
       } catch (err) {
         console.error("Failed to load stats", err);

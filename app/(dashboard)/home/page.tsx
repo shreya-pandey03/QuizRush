@@ -116,7 +116,7 @@ export default function HomePage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-x-hidden p-8"
+      className="relative min-h-screen overflow-x-hidden px-4 py-8 md:px-8"
       style={{ background: "#0a0a0a", color: "#f5f0e8" }}
     >
       {/* ── Grid background ── */}
@@ -773,7 +773,13 @@ function JoinLobbyInline() {
       >
         Join a Room by Code
       </h2>
-      <div style={{ display: "flex", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -782,7 +788,8 @@ function JoinLobbyInline() {
           onBlur={() => setFocused(false)}
           placeholder="Enter room code…"
           style={{
-            flex: 1,
+            flex: "1 1 250px",
+            minWidth: 0,
             padding: "12px 16px",
             borderRadius: 10,
             background: "#111",
@@ -811,6 +818,7 @@ function JoinLobbyInline() {
             cursor: code.trim() ? "pointer" : "not-allowed",
             transition: "background .2s, transform .15s",
             whiteSpace: "nowrap",
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => {
             if (!code.trim()) return;

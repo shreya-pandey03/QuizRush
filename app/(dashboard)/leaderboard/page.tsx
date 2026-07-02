@@ -1,15 +1,30 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/drizzle/src/db";
 import { gameHistory } from "@/drizzle/src/db/schema";
 import { desc } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
+type GameHistory = InferSelectModel<typeof gameHistory>;
 
 export default async function LeaderboardPage() {
-  const results = await db
-    .select()
-    .from(gameHistory)
-    .orderBy(desc(gameHistory.score));
+  let results: GameHistory[] = [];
 
-  // simple aggregation (top users)
+  try {
+    if (!process.env.DATABASE_URL) {
+      console.warn("DATABASE_URL missing");
+      results = [];
+    } else {
+      results = await db
+        .select()
+        .from(gameHistory)
+        .orderBy(desc(gameHistory.score));
+    }
+  } catch (err) {
+    console.error("Leaderboard DB error:", err);
+    results = [];
+  }
+
   const map = new Map<
     string,
     { userId: string; score: number; games: number }
@@ -21,13 +36,12 @@ export default async function LeaderboardPage() {
     if (!existing) {
       map.set(r.userId, {
         userId: r.userId,
-        score: r.score,
+        score: r.score ?? 0,
         games: 1,
       });
     } else {
-      existing.score += r.score;
+      existing.score += r.score ?? 0;
       existing.games += 1;
-      map.set(r.userId, existing);
     }
   }
 
@@ -45,21 +59,19 @@ export default async function LeaderboardPage() {
         className="fixed inset-0 pointer-events-none"
         style={{
           backgroundImage: `
-          linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)
-        `,
+            linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)
+          `,
           backgroundSize: "48px 48px",
-          zIndex: 0,
         }}
       />
 
-      {/* Orange Glow */}
+      {/* Glow */}
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
           background:
             "radial-gradient(circle at top center, rgba(234,120,30,.12), transparent 60%)",
-          zIndex: 0,
         }}
       />
 
@@ -71,7 +83,7 @@ export default async function LeaderboardPage() {
           margin: "0 auto",
         }}
       >
-        {/* Header */}
+        {/* HEADER */}
         <div style={{ marginBottom: 36 }}>
           <p
             style={{
@@ -107,7 +119,7 @@ export default async function LeaderboardPage() {
           </p>
         </div>
 
-        {/* Table */}
+        {/* TABLE */}
         <div
           style={{
             background: "rgba(234,120,30,.05)",
@@ -117,7 +129,7 @@ export default async function LeaderboardPage() {
             backdropFilter: "blur(10px)",
           }}
         >
-          {/* Header Row */}
+          {/* Header */}
           <div
             style={{
               display: "grid",
@@ -136,6 +148,7 @@ export default async function LeaderboardPage() {
             <div>Score</div>
           </div>
 
+          {/* Rows */}
           {leaderboard.map((p, index) => {
             const medal =
               index === 0
@@ -160,96 +173,20 @@ export default async function LeaderboardPage() {
                       : "none",
                 }}
               >
-                {/* Rank */}
-                <div
-                  style={{
-                    color:
-                      index === 0
-                        ? "#FFD700"
-                        : index === 1
-                          ? "#C0C0C0"
-                          : index === 2
-                            ? "#CD7F32"
-                            : "#ea781e",
-                    fontWeight: 700,
-                    fontSize: 22,
-                  }}
-                >
-                  {medal}
-                </div>
+                <div style={{ color: "#ea781e", fontWeight: 700 }}>{medal}</div>
 
-                {/* Player */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: "50%",
-                      background: "rgba(234,120,30,.1)",
-                      border: "0.5px solid rgba(234,120,30,.25)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#ea781e",
-                      fontWeight: 700,
-                      fontSize: 18,
-                    }}
-                  >
-                    {p.userId.charAt(0).toUpperCase()}
-                  </div>
+                <div style={{ color: "#f5f0e8" }}>{p.userId}</div>
 
-                  <div>
-                    <div
-                      style={{
-                        color: "#f5f0e8",
-                        fontSize: 16,
-                        fontFamily: "Georgia, serif",
-                      }}
-                    >
-                      {p.userId}
-                    </div>
+                <div style={{ color: "rgba(245,240,232,.7)" }}>{p.games}</div>
 
-                    <div
-                      style={{
-                        color: "rgba(245,240,232,.45)",
-                        fontSize: 13,
-                      }}
-                    >
-                      QuizRush Player
-                    </div>
-                  </div>
-                </div>
-
-                {/* Games */}
-                <div
-                  style={{
-                    color: "rgba(245,240,232,.7)",
-                    fontSize: 18,
-                  }}
-                >
-                  {p.games}
-                </div>
-
-                {/* Score */}
-                <div
-                  style={{
-                    color: "#ea781e",
-                    fontWeight: 700,
-                    fontSize: 22,
-                  }}
-                >
+                <div style={{ color: "#ea781e", fontWeight: 700 }}>
                   {p.score} pts
                 </div>
               </div>
             );
           })}
 
+          {/* Empty state */}
           {leaderboard.length === 0 && (
             <div
               style={{

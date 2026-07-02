@@ -20,16 +20,27 @@ export default function SideBar() {
   return (
     <div
       style={{
-        width: 220,
+        width: "220px",
+        minWidth: "220px",
+        maxWidth: "220px",
+
         minHeight: "100vh",
         background: "#0a0a0a",
         borderRight: "0.5px solid rgba(234,120,30,.15)",
+
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "1.5rem 1.25rem",
+
+        padding: "1rem",
         position: "relative",
+
         flexShrink: 0,
+
+        overflowX: "hidden",
+        overflowY: "auto",
+
+        boxSizing: "border-box",
       }}
     >
       {/* ── Subtle inner glow ── */}
@@ -47,7 +58,7 @@ export default function SideBar() {
         }}
       />
 
-      {/* ── TOP ── */}
+      {/* TOP */}
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Logo */}
         <div style={{ marginBottom: "2rem" }}>
@@ -57,38 +68,35 @@ export default function SideBar() {
               alignItems: "center",
               gap: 7,
               marginBottom: 4,
+              overflow: "hidden",
             }}
           >
             <span
               style={{
                 width: 7,
                 height: 7,
+                minWidth: 7,
                 borderRadius: "50%",
                 background: "#ea781e",
                 display: "inline-block",
                 animation: "sbBlink 1.5s ease-in-out infinite",
               }}
             />
+
             <span
               style={{
-                fontSize: 20,
+                fontSize: "clamp(14px, 2vw, 20px)",
                 letterSpacing: ".15em",
                 textTransform: "uppercase",
                 color: "#ea781e",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               QuizRush
             </span>
           </div>
-          <h1
-            style={{
-              fontFamily: "Georgia, serif",
-              fontSize: 18,
-              fontWeight: 400,
-              color: "#f5f0e8",
-              lineHeight: 1.2,
-            }}
-          ></h1>
         </div>
 
         {/* Divider */}
@@ -100,7 +108,7 @@ export default function SideBar() {
           }}
         />
 
-        {/* Nav links */}
+        {/* Navigation */}
         <nav>
           <ul
             style={{
@@ -115,6 +123,7 @@ export default function SideBar() {
             {NAV_LINKS.map(({ href, label, icon }) => {
               const active =
                 pathname === href || pathname?.startsWith(href + "/");
+
               return (
                 <li key={href}>
                   <Link
@@ -122,61 +131,58 @@ export default function SideBar() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      padding: "10px 12px",
+                      gap: 8,
+                      padding: "10px",
                       borderRadius: 9,
+
                       background: active
                         ? "rgba(234,120,30,.12)"
                         : "transparent",
+
                       border: active
                         ? "0.5px solid rgba(234,120,30,.3)"
                         : "0.5px solid transparent",
+
                       color: active ? "#f5f0e8" : "rgba(245,240,232,.45)",
-                      fontSize: 14,
+
+                      fontSize: 13,
                       fontFamily: "Georgia, serif",
                       textDecoration: "none",
+
+                      overflow: "hidden",
+
                       transition: "background .2s, color .2s, border-color .2s",
                     }}
-                    onMouseEnter={(e) => {
-                      if (active) return;
-                      (e.currentTarget as HTMLAnchorElement).style.background =
-                        "rgba(234,120,30,.06)";
-                      (e.currentTarget as HTMLAnchorElement).style.color =
-                        "#f5f0e8";
-                      (e.currentTarget as HTMLAnchorElement).style.borderColor =
-                        "rgba(234,120,30,.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (active) return;
-                      (e.currentTarget as HTMLAnchorElement).style.background =
-                        "transparent";
-                      (e.currentTarget as HTMLAnchorElement).style.color =
-                        "rgba(245,240,232,.45)";
-                      (e.currentTarget as HTMLAnchorElement).style.borderColor =
-                        "transparent";
-                    }}
                   >
-                    {/* Icon */}
                     <span
                       style={{
                         color: active ? "#ea781e" : "rgba(245,240,232,.3)",
-                        transition: "color .2s",
                         display: "flex",
+                        flexShrink: 0,
                       }}
                     >
                       {icon}
                     </span>
-                    {label}
 
-                    {/* Active indicator dot */}
+                    <span
+                      style={{
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        flex: 1,
+                      }}
+                    >
+                      {label}
+                    </span>
+
                     {active && (
                       <span
                         style={{
-                          marginLeft: "auto",
                           width: 5,
                           height: 5,
                           borderRadius: "50%",
                           background: "#ea781e",
+                          flexShrink: 0,
                           animation: "sbBlink 1.5s ease-in-out infinite",
                         }}
                       />
@@ -189,14 +195,15 @@ export default function SideBar() {
         </nav>
       </div>
 
-      {/* ── BOTTOM ── */}
-      {/* User info */}
+      {/* Bottom */}
       {session?.user && (
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 4,
+            gap: 6,
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {/* User Card */}
@@ -209,6 +216,7 @@ export default function SideBar() {
               borderRadius: 10,
               background: "rgba(234,120,30,.05)",
               border: "0.5px solid rgba(234,120,30,.15)",
+              overflow: "hidden",
             }}
           >
             <Avatar
@@ -237,7 +245,12 @@ export default function SideBar() {
               </AvatarFallback>
             </Avatar>
 
-            <div style={{ overflow: "hidden" }}>
+            <div
+              style={{
+                minWidth: 0,
+                flex: 1,
+              }}
+            >
               <p
                 style={{
                   color: "#f5f0e8",
@@ -265,7 +278,7 @@ export default function SideBar() {
             </div>
           </div>
 
-          {/* Logout Card */}
+          {/* Sign Out */}
           <div
             style={{
               borderRadius: 10,
@@ -284,12 +297,17 @@ export default function SideBar() {
                 gap: 8,
                 padding: "9px 0",
                 borderRadius: 8,
+
                 background: "rgba(163,45,45,.15)",
                 border: "0.5px solid rgba(163,45,45,.35)",
+
                 color: "#F09595",
-                fontSize: 13,
+                fontSize: 12,
                 fontFamily: "Georgia, serif",
+
                 cursor: "pointer",
+                whiteSpace: "nowrap",
+
                 transition: "all .2s ease",
               }}
             >
@@ -300,13 +318,12 @@ export default function SideBar() {
         </div>
       )}
 
-      {/* ── Keyframes ── */}
       <style>{`
-        @keyframes sbBlink {
-          0%,100%{ opacity: 1 }
-          50%    { opacity: 0.3 }
-        }
-      `}</style>
+    @keyframes sbBlink {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  `}</style>
     </div>
   );
 }

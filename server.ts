@@ -1,6 +1,5 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
-
 import { playerHandlers } from "@/lib/socket/playerHandlers";
 import { scoreHandlers } from "@/lib/socket/scoreHandlers";
 import { lobbyHandlers } from "@/lib/socket/lobbyHandlers";
@@ -11,13 +10,19 @@ const PORT = Number(process.env.PORT) || 3002;
 
 const httpServer = createServer();
 
+const CLIENT_URL =
+  process.env.NODE_ENV === "production"
+    ? process.env.CLIENT_URL
+    : "http://localhost:3001";
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3001",
+    origin: CLIENT_URL,
     methods: ["GET", "POST"],
   },
 });
 
+// connection handling
 io.on("connection", (socket) => {
   console.log("CONNECTED:", socket.id);
 
@@ -35,6 +40,7 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(PORT, () => {
+// start server
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log("Socket server running on port", PORT);
 });
