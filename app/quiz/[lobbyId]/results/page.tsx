@@ -893,7 +893,7 @@ export default function ResultsPage() {
             textAlign: "center",
             marginBottom: 24,
             fontSize: 11,
-            color: "rgba(245,240,232,.18)",
+            color: "rgba(245,240,232,.80)",
             fontFamily: "Georgia, serif",
           }}
         >
