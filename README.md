@@ -15,6 +15,7 @@ It is designed for low-latency gameplay, scalable lobby systems, and smooth real
 
 
 🧠 Features
+
 ⚡ Real-Time Gameplay
 Live question streaming using Socket.IO
 Instant answer submission and scoring
@@ -22,17 +23,20 @@ Synchronized timers for all players
 Server-controlled game flow
 
 🏠 Lobby System
+
 Create & join public/private lobbies
 Unique shareable lobby codes
 Live player tracking
 Host-controlled start system
 
 🏆 Leaderboard System
+
 Live score updates
 Final match rankings
 Player performance tracking
 
 🔐 Authentication
+
 Google OAuth via NextAuth
 Persistent user sessions
 Secure role-based access
@@ -71,177 +75,184 @@ Deployment: Vercel + Render (Socket Server)
 
 
 📁 Project Structure
-multiplayer-quiz-game/
-├── app/
-│
-│   ├── (dashboard)/
-│   │   ├── home/
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── games/
-│   │   │   ├── page.tsx
-│   │   │   └── [gameId]/
-│   │   │       └── page.tsx
-│   │   │
-│   │   └── leaderboard/
-│   │       └── page.tsx
-│   │
-│   ├── lobby/
-│   │   └── [lobbyId]/
-│   │       ├── page.tsx
-│   │       └── QuizLobbyClient.tsx
-│   │
-│   ├── quiz/
-│   │   └── [lobbyId]/
-│   │       └── results/
-│   │           └── page.tsx
-│   │
-│   ├── profile/
-│   │   ├── achievements/page.tsx
-│   │   ├── history/page.tsx
-│   │   └── stats/page.tsx
-│   │
-│   ├── signup/page.tsx
-│   ├── layout.tsx
-│   └── page.tsx
-│
-│
-├── app/api/
-│
-│   ├── auth/
-│   │   └── [...nextauth]/route.ts
-│   │
-│   ├── lobby/
-│   │   ├── create/route.ts
-│   │   ├── join/route.ts
-│   │   ├── leave/route.ts
-│   │   ├── start/route.ts
-│   │   └── details/route.ts
-│   │
-│   ├── lobbies/route.ts
-│   ├── questions/route.ts
-│   ├── quiz-progress/route.ts
-│   └── leaderboard/route.ts
-│
-├── components/
-│
-│   ├── quiz/
-│   │   ├── QuestionCard.tsx
-│   │   ├── QuestionOptions.tsx
-│   │   ├── QuizTimer.tsx
-│   │   ├── ScoreBoard.tsx
-│   │   ├── PlayersList.tsx
-│   │   ├── ResultModal.tsx
-│   │   ├── LobbyCard.tsx
-│   │   └── JoinLobbyDialog.tsx
-│   │
-│   ├── layout/
-│   │   ├── Navbar.tsx
-│   │   ├── SideBar.tsx
-│   │   ├── adminSidebar.tsx
-│   │   └── authProvider.tsx
-│   │
-│   └── ui/
-│       └── homeButtons.tsx
-├── lib/
-│
-│   ├── socket/
-│   │   ├── socket.ts  
-│   │   ├── gameStore.ts          
-│   │   ├── scoreHandlers.ts  
-│   │   ├── timers.ts       
-│   │   ├── lobbyHandlers.ts       
-│   │   ├── playerHandler.ts     
-│   │   └── types.ts
-│   │
-│   ├── game/
-│   │   ├── questionManager.ts     
-│   │   └── types.ts
-│   │
-│   └── utils.ts
-│
-├── hooks/
-│   ├── useSocket.ts
-│   ├── useLobby.ts
-│
-│
-├── store/
-│   ├── quizStore.ts
-│   └── socketStore.ts
-│
-├── drizzle/
-│   └── db/
-│       ├── index.ts
-│       └── schema.ts
-│
-├── data/
-│   └── questions.json
-│
-├── scripts/
-│   ├── createAdmin.ts
-│   └── testGemini.ts
-│
-├── types/
-│   ├── lobby.ts
-│   ├── player.ts
-│   ├── question.ts
-│   ├── quiz.ts
-│   ├── socket.ts
-│   ├── auth.ts
-│   ├── leaderboard.ts
-│   └── user.ts
-│
-├── actions/
-│   ├── CreateLobby.ts
-│   ├── JoinLobby.ts
-│   ├── StartQuiz.ts
-│   ├── SubmitAnswer.ts
-│   └── CalculateScore.ts
-│
-├── server.ts
-├── next.config.ts
-├── tsconfig.json
-├── drizzle.config.ts
-├── package.json
-└── .env
 
 
-🚀 Getting Started
+ multiplayer-quiz-game/
+ ├── app/
+ │
+ │   ├── (dashboard)/
+ │   │   ├── home/
+ │   │   │   └── page.tsx
+ │   │   │
+ │   │   ├── games/
+ │   │   │   ├── page.tsx
+ │   │   │   └── [gameId]/
+ │   │   │       └── page.tsx
+ │   │   │
+ │   │   └── leaderboard/
+ │   │       └── page.tsx
+ │   │
+ │   ├── lobby/
+ │   │   └── [lobbyId]/
+ │   │       ├── page.tsx
+ │   │       └── QuizLobbyClient.tsx
+ │   │
+ │   ├── quiz/
+ │   │   └── [lobbyId]/
+ │   │       └── results/
+ │   │           └── page.tsx
+ │   │
+ │   ├── profile/
+ │   │   ├── achievements/page.tsx
+ │   │   ├── history/page.tsx
+ │   │   └── stats/page.tsx
+ │   │
+ │   ├── signup/page.tsx
+ │   ├── layout.tsx
+ │   └── page.tsx
+ │
+ │
+ ├── app/api/
+ │
+ │   ├── auth/
+ │   │   └── [...nextauth]/route.ts
+ │   │
+ │   ├── lobby/
+ │   │   ├── create/route.ts
+ │   │   ├── join/route.ts
+ │   │   ├── leave/route.ts
+ │   │   ├── start/route.ts
+ │   │   └── details/route.ts
+ │   │
+ │   ├── lobbies/route.ts
+ │   ├── questions/route.ts
+ │   ├── quiz-progress/route.ts
+ │   └── leaderboard/route.ts
+ │
+ ├── components/
+ │
+ │   ├── quiz/
+ │   │   ├── QuestionCard.tsx
+ │   │   ├── QuestionOptions.tsx
+ │   │   ├── QuizTimer.tsx
+ │   │   ├── ScoreBoard.tsx
+ │   │   ├── PlayersList.tsx
+ │   │   ├── ResultModal.tsx
+ │   │   ├── LobbyCard.tsx
+ │   │   └── JoinLobbyDialog.tsx
+ │   │
+ │   ├── layout/
+ │   │   ├── Navbar.tsx
+ │   │   ├── SideBar.tsx
+ │   │   ├── adminSidebar.tsx
+ │   │   └── authProvider.tsx
+ │   │
+ │   └── ui/
+ │       └── homeButtons.tsx
+ ├── lib/
+ │
+ │   ├── socket/
+ │   │   ├── socket.ts  
+ │   │   ├── gameStore.ts          
+ │   │   ├── scoreHandlers.ts  
+ │   │   ├── timers.ts       
+ │   │   ├── lobbyHandlers.ts       
+ │   │   ├── playerHandler.ts     
+ │   │   └── types.ts
+ │   │
+ │   ├── game/
+ │   │   ├── questionManager.ts     
+ │   │   └── types.ts
+ │   │
+ │   └── utils.ts
+ │
+ ├── hooks/
+ │   ├── useSocket.ts
+ │   ├── useLobby.ts
+ │
+ │
+ ├── store/
+ │   ├── quizStore.ts
+ │   └── socketStore.ts
+ │
+ ├── drizzle/
+ │   └── db/
+ │       ├── index.ts
+ │       └── schema.ts
+ │
+ ├── data/
+ │   └── questions.json
+ │
+ ├── scripts/
+ │   ├── createAdmin.ts
+ │    └── testGemini.ts
+ │
+ ├── types/
+ │   ├── lobby.ts
+ │   ├── player.ts
+ │   ├── question.ts
+ │   ├── quiz.ts
+ │   ├── socket.ts
+ │   ├── auth.ts
+ │   ├── leaderboard.ts
+ │   └── user.ts
+ │
+ ├── actions/
+ │   ├── CreateLobby.ts
+ │   ├── JoinLobby.ts
+ │   ├── StartQuiz.ts
+ │   ├── SubmitAnswer.ts
+ │   └── CalculateScore.ts
+ │
+ ├── server.ts
+ ├── next.config.ts
+ ├── tsconfig.json
+ ├── drizzle.config.ts
+ ├── package.json
+ └── .env
 
-1. Install dependencies
+
+ 🚀 Getting Started
+
+
+  1. Install dependencies
    bun install
-2. Run development server
+  2. Run development server
    bun dev
 
 
-Open:
+ Open:
+ http://localhost:3000
 
-http://localhost:3000
+
 ⚙️ Environment Variables
-DATABASE_URL=your_postgres_url
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_secret
-SOCKET_SERVER_URL=http://localhost:3002
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+ DATABASE_URL=your_postgres_url
+ NEXTAUTH_URL=http://localhost:3000
+ NEXTAUTH_SECRET=your_secret
+ SOCKET_SERVER_URL=http://localhost:3002
+ GOOGLE_CLIENT_ID=your_google_client_id
+ GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 
 🚀 Deployment
-Frontend (Vercel)
-bun run build
-vercel deploy
-Socket Server (Render / Railway)
-Deploy server.ts
-Enable WebSockets
-Set environment variables
+
+ Frontend (Vercel)
+ bun run build
+ vercel deploy
+ Socket Server (Render / Railway)
+ Deploy server.ts
+ Enable WebSockets
+ Set environment variables
 
 
 📈 Roadmap
-Ranked matchmaking system
-Tournament mode
-Mobile app (React Native)
-AI-generated questions
-Advanced analytics dashboard
+ 
+ Ranked matchmaking system
+ Tournament mode
+ Mobile app (React Native)
+ AI-generated questions
+ Advanced analytics dashboard
 
 ## 🤝 Contributing
 
@@ -263,9 +274,9 @@ Follow these steps:
 ```md id="license1"
 ## 📜 License
 
-This project is licensed under the **MIT License**.
+ This project is licensed under the **MIT License**.
 
-You are free to use, modify, and distribute this project with attribution.
+ You are free to use, modify, and distribute this project with attribution.
 
 🔗 Live
 👉 https://quiz-rush-lac.vercel.app
