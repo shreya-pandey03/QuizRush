@@ -46,51 +46,85 @@ export default function ResultsPage() {
   const score = reviewData.filter((q) => q.isCorrect).length;
   const total = reviewData.length;
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
   useEffect(() => {
     if (total === 0) return;
     const unlocked: string[] = [];
-    if (score === total) {
-      unlocked.push("perfect");
-    }
-    if (pct >= 80) {
-      unlocked.push("quiz_master");
-    }
-    if (pct >= 50) {
-      unlocked.push("good_try");
-    }
-    if (pct < 50) {
-      unlocked.push("practice_mode");
-    }
+    if (score === total) unlocked.push("perfect");
+    if (pct >= 80) unlocked.push("quiz_master");
+    if (pct >= 50) unlocked.push("good_try");
+    if (pct < 50) unlocked.push("practice_mode");
     const existing = JSON.parse(localStorage.getItem("achievements") || "[]");
     const merged = [...new Set([...existing, ...unlocked])];
     localStorage.setItem("achievements", JSON.stringify(merged));
   }, [score, total, pct]);
 
+  // FIX 1: loading state — was plain <div>Loading Results...</div>
   if (loading) {
-    return <div>Loading Results...</div>;
+    return (
+      <main
+        className="relative min-h-screen flex items-center justify-center"
+        style={{ background: "#0a0a0a" }}
+      >
+        {/* Grid */}
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(rgba(234,120,30,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(234,120,30,.055) 1px, transparent 1px)`,
+            backgroundSize: "48px 48px",
+            zIndex: 0,
+          }}
+        />
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(234,120,30,.13) 0%, transparent 65%)",
+            zIndex: 0,
+          }}
+        />
+        <style>{`@keyframes floatA { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }`}</style>
+        <div className="relative" style={{ zIndex: 10, textAlign: "center" }}>
+          <div
+            style={{
+              fontSize: 36,
+              animation: "floatA 2s ease-in-out infinite",
+            }}
+          >
+            ⚡
+          </div>
+          <p
+            style={{
+              color: "#ea781e",
+              fontFamily: "Georgia, serif",
+              fontSize: 16,
+              marginTop: 12,
+              letterSpacing: ".08em",
+            }}
+          >
+            Loading Results…
+          </p>
+        </div>
+      </main>
+    );
   }
+
   const getMessage = () => {
-    if (pct >= 80) {
+    if (pct >= 80)
       return {
         text: "Excellent!",
         sub: "You crushed it — top of the leaderboard material.",
       };
-    }
-
-    if (pct >= 60) {
+    if (pct >= 60)
       return {
         text: "Good effort!",
         sub: "Solid performance. A few more rounds and you'll dominate.",
       };
-    }
-
-    if (pct >= 40) {
+    if (pct >= 40)
       return {
         text: "Keep going!",
         sub: "You're getting there. Practice makes perfect.",
       };
-    }
-
     return {
       text: "Keep practising!",
       sub: "Every question is a lesson. Come back stronger.",
@@ -109,8 +143,9 @@ export default function ResultsPage() {
           : "#A32D2D";
 
   return (
+    // FIX 2: p-1 → p-6 (was essentially no padding, content touched screen edges)
     <main
-      className="relative min-h-screen overflow-x-hidden p-1"
+      className="relative min-h-screen overflow-x-hidden p-6"
       style={{ background: "#0a0a0a" }}
     >
       {/* ── Background ── */}
@@ -700,7 +735,6 @@ export default function ResultsPage() {
                       borderBottom: `0.5px solid ${item.isCorrect ? "rgba(59,109,17,.12)" : "rgba(163,45,45,.12)"}`,
                     }}
                   >
-                    {/* Index badge */}
                     <div
                       style={{
                         width: 26,
@@ -721,7 +755,6 @@ export default function ResultsPage() {
                     >
                       {index + 1}
                     </div>
-                    {/* Question text */}
                     <p
                       style={{
                         flex: 1,
@@ -735,7 +768,6 @@ export default function ResultsPage() {
                     >
                       {item.question}
                     </p>
-                    {/* Result icon */}
                     <div style={{ flexShrink: 0, paddingTop: 3 }}>
                       {item.isCorrect ? (
                         <CheckCircle size={16} color="#97C459" />
@@ -806,7 +838,6 @@ export default function ResultsPage() {
                         </span>
                       </div>
                     </div>
-
                     {/* Correct answer — only when wrong */}
                     {!item.isCorrect && (
                       <div
@@ -856,16 +887,17 @@ export default function ResultsPage() {
           </div>
         )}
 
+        {/* FIX 3: room code footer — was fontSize:18 + 80% opacity (too large & bright) */}
         <p
           style={{
             textAlign: "center",
             marginBottom: 24,
-            fontSize: 18,
-            color: "rgba(245,240,232,.80)",
+            fontSize: 11,
+            color: "rgba(245,240,232,.18)",
             fontFamily: "Georgia, serif",
           }}
         >
-          RoomCode · {lobbyId}
+          Room · {lobbyId}
         </p>
       </div>
 
