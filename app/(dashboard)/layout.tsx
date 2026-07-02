@@ -22,18 +22,7 @@ export default function DashboardLayout({
         position: "relative",
       }}
     >
-      {/* Desktop Sidebar */}
-      <div
-        className="hidden md:block"
-        style={{
-          width: 220,
-          flexShrink: 0,
-        }}
-      >
-        <SideBar />
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
+      {/* Sidebar opened by ☰ */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
