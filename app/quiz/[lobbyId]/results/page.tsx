@@ -892,7 +892,7 @@ export default function ResultsPage() {
           style={{
             textAlign: "center",
             marginBottom: 24,
-            fontSize: 11,
+            fontSize: 18,
             color: "rgba(245,240,232,.80)",
             fontFamily: "Georgia, serif",
           }}
